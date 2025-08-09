@@ -292,4 +292,4 @@ Please include:
 
 📄 License
 
-Add your license of choice here (MIT recommended).
+MIT License
