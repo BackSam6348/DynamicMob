@@ -1,163 +1,175 @@
 # DynamicMob
 
-A highly configurable mob–spawn customizer for Paper/Folia 1.21.x.
-Replace natural spawns with different mobs, equip them with randomized gear & vanilla-style enchants, create jockeys, power creepers, give skeletons block helmets, and even turn normal rabbits into The Killer Bunny — all driven by config.yml.
+An advanced mob-spawn customizer for **Paper/Folia 1.21.x**.  
+Replace natural spawns with **other mobs** (weighted), give equipment and **vanilla-style enchantments**, enable **chicken/spider jockeys**, **charged creepers**, **block helmets** for skeletons (and more), and even turn rabbits into the **Killer Bunny**—all controlled via `config.yml`.
 
-    Works with NATURAL spawns, SPAWNER spawns, and (optionally) SPAWNER_EGG.
+- Works with **NATURAL**, **SPAWNER**, and (optionally) **SPAWNER_EGG** spawns  
+- Fully **Folia** compatible  
+- `/dm reload` is **registered at runtime** in code → use **paper-plugin.yml only** (no `plugin.yml` needed)
 
-    Fully compatible with Folia.
+---
 
-    No plugin.yml required: /dm reload is registered at runtime (paper-plugin.yml only is fine).
+## ✨ Features
 
-✨ Features
+- **Replacement spawns:** convert originally spawning mobs (e.g., `ZOMBIE`, `SKELETON`) into other mobs (e.g., `PIGLIN`, `WITHER_SKELETON`, `BOGGED`) using per-source weighted tables  
+- **Scope control:** choose where replacement applies—**natural**, **spawner**, **spawn egg**  
+- **Natural spawn chance limiter:** per-entity throttle for NATURAL spawns (can effectively disable)  
+- **Spawn multiplier:** clone NATURAL monster spawns (bosses excluded)  
+- **Equipment tables:** per-mob slot (weapon/helmet/chest/legs/boots) with probabilities + randomized durability  
+- **Vanilla-like enchantments:**  
+  - Bow: Power / Punch / Flame / Infinity  
+  - Swords/Axes: Sharpness / Smite / Fire Aspect / Looting  
+  - Armor: Protection / Projectile / Blast / Thorns, and (boots) Feather Falling  
+- **Special spawns:**  
+  - **Charged creeper** chance  
+  - **Drowned Channeling trident** via special token  
+  - **Chicken/Spider jockeys**  
+- **Block helmets:**  
+  - Global block-helmet pool (`special.block_helmet.general`)  
+  - Skeleton-only pool (`special.block_helmet.skeleton`)  
+  - Applied **only if the helmet slot is empty**  
+- **Piglin / Piglin Brute / Hoglin zombification immunity:**  
+  - Cancel original spawn and re-spawn as **immune from the start**  
+    (equivalent to `/summon ... {IsImmuneToZombification:1}`)  
+- **Killer Bunny:**  
+  - Convert **original rabbit spawns** into Killer Bunny based on chance + scope
 
-    Replacement Spawns: Convert “original” mobs (e.g., ZOMBIE, SKELETON) into other types (e.g., PIGLIN, WITHER_SKELETON, BOGGED) with weighted chances.
+---
 
-    Scope Control: Choose where replacement applies: natural, spawner, and/or spawn egg.
+## ✅ Requirements
 
-    Spawn Chance Limits: Per–entity natural spawn probability (limit or disable certain mobs).
+- **Java 17+**  
+- **Paper** or **Folia** `1.21.x`
 
-    Multiplier: Duplicate NATURAL monster spawns (excludes bosses).
+---
 
-    Equipment Tables: Slot-based item chances per mob (weapon/helmet/chest/legs/boots), with randomized durability.
+## 📦 Installation
 
-    Vanilla-like Enchanting:
+1. Put the plugin JAR into `plugins/`.  
+2. Use **paper-plugin.yml** only (no `plugin.yml`).  
+3. Start the server to generate `config.yml`.  
+4. Edit `config.yml` to your liking.  
+5. Apply changes with **`/dm reload`**.
 
-        Bows (Power, Punch, Flame, Infinity)
+---
 
-        Swords/Axes (Sharpness, Smite, Fire Aspect, Looting)
+## 🔧 Commands & Permissions
 
-        Armor (Protection/Projectile/Blast, Thorns, Feather Falling on boots)
+- **`/dm reload`** — reloads `config.yml` (registered at runtime; works without `plugin.yml`)  
+- **Permission:** `dynamicmob.reload` (default: OP)
 
-    Special Spawns:
+---
 
-        Charged Creeper chance
+## ⚙️ Config Highlights (based on the provided structure)
 
-        Drowned with Channeling Trident chance
-
-        Chicken/Spider Jockeys for the usual families
-
-    Block Helmets:
-
-        Global block helmets (e.g., Pumpkin)
-
-        Skeleton-only block helmets (e.g., Obsidian, Bone Block)
-
-        Applied only if the helmet slot is empty
-
-    Piglin / Piglin Brute / Hoglin Zombification Immunity:
-
-        Original spawn is canceled and replaced with a fresh immune entity (equivalent to /summon ... {IsImmuneToZombification:1})
-
-    Killer Bunny (two ways):
-
-        If a replacement result is RABBIT, optionally convert to THE_KILLER_BUNNY
-
-        When a normal rabbit spawns, optionally convert to THE_KILLER_BUNNY based on chance & scope
-
-    Pretty console banners on load/unload, and a tidy reload message.
-
-✅ Requirements
-
-    Java 17+
-
-    Paper or Folia 1.21.x
-
-📦 Installation
-
-    Build the plugin (or download the release JAR).
-
-    Put the JAR in your server’s plugins/ directory.
-
-    Use paper-plugin.yml (no plugin.yml needed).
-
-    Start the server to generate config.yml.
-
-    Tweak config.yml to your liking.
-
-    Reload configs via /dm reload.
-
-🔧 Commands & Permissions
-
-    /dm reload – Reloads config.yml.
-    Registered in code, so you don’t need to declare the command in paper-plugin.yml.
-
-Permission: dynamicmob.reload (default: OP)
-⚙️ Configuration (quick start)
-
-Below is a compact example with the most commonly used sections:
-
-mob-spawn:
-  multiplier: 1.0          # Duplicate NATURAL monster spawns (excludes bosses)
-  enable-spawn-egg: true   # Apply customizations to SPAWNER_EGG spawns
-
-light-threshold: 9         # Informational only (vanilla hostiles = 7, Nether variants vary)
-
+### 1) Enchant chance
+```yml
 enchant-chance:
-  weapon: 0.35             # Chance to enchant weapon
-  armor: 0.25              # Chance to enchant each armor piece
+  weapon: 0.0001
+  armor: 0.0001
+```
+Extremely low (0.01%) chance to add vanilla-like enchants to weapons/armor.
 
+### 2) Spawn multiplier & spawn-egg scope
+```yml
+mob-spawn:
+  multiplier: 1.3
+  enable-spawn-egg: true
+```
+- **Note:** depending on the code (e.g., `extra = round(multiplier - 1)`), **1.3 may result in 0 extra clones**.  
+  For a guaranteed +1 clone, use **`2.0`** (or `3.0` for +2).  
+- Custom logic also applies to **spawn eggs** (`true`).
+
+### 3) Light threshold (informational)
+```yml
+light-threshold: 9
+```
+Informational value (vanilla hostile baseline is ~7; Nether depends on mob).
+
+### 4) Special
+```yml
 special:
-  leaves_helmet: 0.01
-  bone_in_hand: 0.04
-  charged_creeper: 0.001
-
-  # Block helmets (applied only if helmet slot empty)
-  block_helmet:
-    general:
-      PUMPKIN: 0.02
-    skeleton:
-      BONE_BLOCK: 0.03
-      OBSIDIAN: 0.01
-
-  # Killer Bunny when the replacement result is a Rabbit
-  killer_bunny_from_replacement: true
-  killer_bunny_chance: 1.0
-
-  # Convert normal rabbits to Killer Bunny on spawn
   killer_bunny_on_rabbit_spawn:
     enabled: true
-    chance: 0.05
+    chance: 0.0001
     apply-to:
       natural: true
       spawner: false
-      spawn-egg: false
+      spawn-egg: true
+  block_helmet:
+    general:
+      OAK_LEAVES: 0.01
+    skeleton:
+      BONE_BLOCK: 0.05
+      OBSIDIAN: 0.02
+  bone_in_hand: 0.03
+  charged_creeper: 0.0006
+```
+- **Original rabbit → Killer Bunny**: enabled, **0.01%**, applies to NATURAL & SPAWN_EGG  
+- **Block helmets:**  
+  - Global: OAK_LEAVES 1%  
+  - Skeleton-only: BONE_BLOCK 5%, OBSIDIAN 2%  
+  - Only if helmet slot is empty  
+- **bone_in_hand (skeleton):** 3%  
+- **charged_creeper:** 0.06%
 
-# Replacement scope
+### 5) Replacement scope
+```yml
 replacement:
   apply-to-natural: true
   apply-to-spawner: false
   apply-to-spawn-egg: false
+```
+Replacement is **natural-only** (not applied to spawner/egg by default).
 
-# Replacement tables: origin -> weighted targets
+### 6) Replacement tables (source → weighted targets)
+```yml
 replacement-spawn:
   ZOMBIE:
-    PIGLIN: 0.12
-    PIGLIN_BRUTE: 0.05
-    HUSK: 0.10
-    ZOMBIFIED_PIGLIN: 0.07
-    ZOGLIN: 0.03
+    PIGLIN: 0.16
+    PIGLIN_BRUTE: 0.0015
+    HUSK: 0.21
+    ZOMBIFIED_PIGLIN: 0.21
+    HOGLIN: 0.16
+    ZOMBIE_VILLAGER: 0.04
+
+  PIG:
+    PIGLIN: 0.21
+    HOGLIN: 0.21
+
+  ZOMBIFIED_PIGLIN:
+    ZOGLIN: 0.35
+
   SKELETON:
-    STRAY: 0.10
-    WITHER_SKELETON: 0.07
-    BOGGED: 0.08
+    STRAY: 0.13
+    WITHER_SKELETON: 0.12
+    BOGGED: 0.11
+```
+- If weights sum **< 1.0**, the remaining chance keeps the **original**.  
+  Example: `ZOMBIE` totals ≈ **0.7815** → ~**78%** replaced, ~**22%** kept  
+- When replacing into `PIGLIN` / `PIGLIN_BRUTE` / `HOGLIN`, the plugin **re-spawns them as immune** (no zombification).
 
-# Natural spawn chance limiting (NATURAL only; 1.0 = no limit)
+### 7) Natural spawn chance limits
+```yml
 spawn-chance:
-  ZOMBIE: 1.0
-  HUSK: 0.6
-  DROWNED: 0.35
-  ZOMBIFIED_PIGLIN: 0.7
-  PIGLIN: 0.7
-  PIGLIN_BRUTE: 0.2
-  HOGLIN: 0.5
-  ZOGLIN: 0.5
+  BOGGED: 0.6
   SKELETON: 1.0
-  STRAY: 0.5
-  WITHER_SKELETON: 0.8
-  BOGGED: 0.5
+  STRAY: 0.6
+  WITHER_SKELETON: 0.9
+  ZOMBIE: 1.0
+  HUSK: 0.8
+  DROWNED: 0.4
+  ZOMBIFIED_PIGLIN: 0.8
+  ZOMBIE_VILLAGER: 0.8
+  PIGLIN: 0.8
+  PIGLIN_BRUTE: 0.3
+  HOGLIN: 0.6
+  ZOGLIN: 0.6
+```
+Applied to **NATURAL** spawns only. `1.0` = no limit; `0.0` = effectively blocked.
 
-# Jockey chances
+### 8) Jockey chance
+```yml
 jockey-chance:
   baby_zombie_chicken_jockey: 0.001
   baby_husk_chicken_jockey: 0.001
@@ -169,127 +181,52 @@ jockey-chance:
   stray_spider_jockey: 0.001
   wither_skeleton_spider_jockey: 0.001
   bogged_spider_jockey: 0.001
+```
+All at **0.1%** (very rare).
 
-# Slot-based equipment tables (per mob)
-spawn-settings:
-  SKELETON:
-    enabled: true
-    weapon:
-      BOW: 0.3
-      STONE_SWORD: 0.01
-    helmet:
-      LEATHER_HELMET: 0.05
-    chestplate:
-      LEATHER_CHESTPLATE: 0.05
-    leggings:
-      LEATHER_LEGGINGS: 0.05
-    boots:
-      LEATHER_BOOTS: 0.05
+### 9) Spawn settings (equipment tables)
+- Per-mob slot probabilities for `weapon/helmet/chestplate/leggings/boots`  
+- **Random durability** for vanilla vibes  
+- **Special token:** `TRIDENT_CHANNELING` for Drowned to hold a Channeling trident
 
-  DROWNED:
-    enabled: true
-    weapon:
-      TRIDENT: 0.001
-      TRIDENT_CHANNELING: 0.0001   # Special token handled by the plugin
-      WOODEN_SWORD: 0.02
+> Heads-up: If you place blocks under `weapon:` (e.g., `OBSIDIAN`), mobs will **hold** them.  
+> If you intend them as helmets, put them under `helmet:` or in `special.block_helmet.skeleton`.
 
-  PIGLIN:
-    enabled: true
-    weapon:
-      GOLDEN_SWORD: 0.08
-      GOLDEN_AXE: 0.05
+---
 
-    Notes
+## 🧠 Processing order (simplified)
 
-        In replacement-spawn, if the sum of weights is less than 1.0, the remaining probability keeps the original mob.
+1. For NATURAL spawns, apply **`spawn-chance`** gate.  
+2. If the mob is **Piglin / Piglin Brute / Hoglin**, **cancel** the original and **re-spawn immune**.  
+3. If replacement scope allows, roll **replacement-spawn** tables.  
+4. If the **original spawn is a RABBIT** and the option is enabled, convert to **Killer Bunny** by chance/scope.  
+5. Equipment tables → random durability → enchant chance → block helmets (only if helmet empty) → **bone_in_hand** → **charged_creeper**.  
+6. Jockey rolls.
 
-        If the sum is ≥ 1.0, an original spawn of that mob is always replaced.
+---
 
-        Block helmets apply only when the mob’s helmet slot is empty. Skeleton-only block helmets are tried after general ones.
+## 🛠️ Troubleshooting
 
-🧠 How It Works
+- **`/dm reload` not recognized / prints twice**  
+  - Ensure the plugin is enabled (check console banner).  
+  - Double-print from console can be fixed by echoing to console **only when the executor isn’t console** (use patched build).  
+- **Replacement doesn’t apply to spawn eggs**  
+  - Your current config: `replacement.apply-to-spawn-egg: false`.  
+  - Set to `true` if you want it.  
+- **Nether mobs in Overworld**  
+  - Prefer **replacement** to emulate “natural” appearances instead of forcing biome rules.
 
-    Spawn Flow
+---
 
-        NATURAL spawn chance limit (per entity)
+## 🤝 Contributing
 
-        Piglin/PiglinBrute/Hoglin: cancel & re-spawn as immune (no zombification, same as using summon NBT)
+PRs/issues welcome. Please include:
+- Paper/Folia version  
+- Java version  
+- Your `config.yml` and minimal reproduction steps
 
-        Replacement: based on replacement-spawn + replacement.apply-to-*
+---
 
-            If the chosen result is RABBIT and killer_bunny_from_replacement is true, optionally convert to Killer Bunny
+## 📄 License
 
-        Killer Bunny on Rabbit spawn: if enabled and scope matches
-
-        Default equipment/specials/enchants/jockey logic
-
-    Multiplier duplicates NATURAL monster spawns only (excludes Ender Dragon, Wither, Warden).
-
-    Drowned Channeling is applied by a special token TRIDENT_CHANNELING in spawn-settings.weapon.
-
-    Durability is randomized to feel more vanilla.
-
-🕹️ Examples
-Replace SKELETON with WITHER_SKELETON 50% of the time
-
-replacement:
-  apply-to-natural: true
-  apply-to-spawner: false
-  apply-to-spawn-egg: false
-
-replacement-spawn:
-  SKELETON:
-    WITHER_SKELETON: 0.5
-
-Give Skeletons a chance to wear Obsidian helmets
-
-special:
-  block_helmet:
-    skeleton:
-      OBSIDIAN: 0.02
-
-Make normal Rabbits sometimes become The Killer Bunny on spawn
-
-special:
-  killer_bunny_on_rabbit_spawn:
-    enabled: true
-    chance: 0.03
-    apply-to:
-      natural: true
-      spawner: false
-      spawn-egg: false
-
-🛠️ Troubleshooting
-
-    /dm reload says “unknown command”
-    The command is registered in code at runtime. If it doesn’t appear:
-
-        Ensure the plugin actually enabled (check console banner).
-
-        Check for command name conflicts from other plugins.
-
-        You only need paper-plugin.yml, not plugin.yml.
-
-    Spawn eggs aren’t using custom settings
-    Set mob-spawn.enable-spawn-egg: true.
-
-    Some Nether mobs don’t appear naturally in the Overworld
-    That’s vanilla behavior. Use replacement-spawn to convert Overworld mobs into Nether variants.
-
-    Another plugin is also modifying spawns
-    Conflicts can occur. Adjust priorities/order or disable overlapping features.
-
-🤝 Contributing
-
-PRs and issues welcome!
-Please include:
-
-    Paper/Folia version
-
-    Java version
-
-    Your config.yml and minimal reproduction steps
-
-📄 License
-
-MIT License
+Add your preferred license (e.g., MIT).
