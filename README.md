@@ -229,4 +229,4 @@ PRs/issues welcome. Please include:
 
 ## 📄 License
 
-Add your preferred license (e.g., MIT).
+MIT license
