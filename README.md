@@ -1,4 +1,4 @@
-DynamicMob
+# DynamicMob
 
 A highly configurable mob–spawn customizer for Paper/Folia 1.21.x.
 Replace natural spawns with different mobs, equip them with randomized gear & vanilla-style enchants, create jockeys, power creepers, give skeletons block helmets, and even turn normal rabbits into The Killer Bunny — all driven by config.yml.
