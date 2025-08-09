@@ -1,0 +1,483 @@
+# ===============================
+# DynamicMob Configuration
+# ===============================
+# This file lets you control the custom natural spawn system for monsters and their equipment.
+# - You can individually enable/disable spawn and jockeys for each mob.
+# - Adjust equipment/chicken jockey/spider jockey chances.
+# - Applies to Overworld and Nether (if allowed).
+# - All chances are between 0.0 (never) and 1.0 (always).
+# - "Enable for spawn egg" lets all custom spawn settings apply to mobs spawned by a monster egg (SPAWNER_EGG).
+# ===============================
+
+enchant-chance:
+  weapon: 0.0001
+  armor: 0.0001
+
+mob-spawn:
+  multiplier: 1.3         # [Global] Multiplies all natural monster spawns except boss mobs (ex: 2.0 = 2x spawn rate)
+  enable-spawn-egg: true  # [EXTRA] If true, all spawn egg (monster egg) spawns are customized like natural spawns.
+
+light-threshold: 9        # [General] Max light level for natural monster spawning (0~15, 7=vanilla default for hostile mobs) (Default : 9)
+
+# --- Special equipment chance settings ---
+special:
+  killer_bunny_on_rabbit_spawn:
+    enabled: true
+    chance: 0.0001
+    apply-to:
+      natural: true
+      spawner: false
+      spawn-egg: true
+  block_helmet:
+    general:
+      OAK_LEAVES: 0.01
+    skeleton:
+      BONE_BLOCK: 0.05
+      OBSIDIAN: 0.02
+  bone_in_hand: 0.03      # Chance for skeletons to spawn with bone in hand (0.1 = 10%) (Default : 0.04)
+  charged_creeper: 0.0006  # Chance for creeper to spawn with charged (0.1 = 10%) (Default : 0.001)
+
+replacement:
+  apply-to-natural: true
+  apply-to-spawner: false
+  apply-to-spawn-egg: false
+
+# --- Replacement Spawn chance settings ---
+replacement-spawn:
+  ZOMBIE:
+    PIGLIN: 0.16
+    PIGLIN_BRUTE: 0.0015
+    HUSK: 0.21
+    ZOMBIFIED_PIGLIN: 0.21
+    HOGLIN: 0.16
+    ZOMBIE_VILLAGER: 0.04
+
+  PIG:
+    PIGLIN: 0.21
+    HOGLIN: 0.21
+
+  ZOMBIFIED_PIGLIN:
+    ZOGLIN: 0.35
+
+  SKELETON:
+    STRAY: 0.13
+    WITHER_SKELETON: 0.12
+    BOGGED: 0.11
+
+# --- Spawn chance settings ---
+spawn-chance:
+  BOGGED: 0.6
+  SKELETON: 1.0
+  STRAY: 0.6
+  WITHER_SKELETON: 0.9
+  ZOMBIE: 1.0
+  HUSK: 0.8
+  DROWNED: 0.4
+  ZOMBIFIED_PIGLIN: 0.8
+  ZOMBIE_VILLAGER: 0.8
+  PIGLIN: 0.8
+  PIGLIN_BRUTE: 0.3
+  HOGLIN: 0.6
+  ZOGLIN: 0.6
+
+# --- Jockey spawn chances (per mob) ---
+jockey-chance:
+  baby_zombie_chicken_jockey: 0.001
+  baby_husk_chicken_jockey: 0.001
+  baby_drowned_chicken_jockey: 0.001
+  baby_zombified_piglin_chicken_jockey: 0.001
+  baby_zombie_villager_chicken_jockey: 0.001
+
+  skeleton_spider_jockey: 0.001
+  stray_spider_jockey: 0.001
+  wither_skeleton_spider_jockey: 0.001
+  bogged_spider_jockey: 0.001
+
+# --- Equipment/spawn settings for each mob type ---
+# Each mob type can be individually configured.
+spawn-settings:
+
+  PIGLIN:
+    enabled: true
+    weapon:
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  PIGLIN_BRUTE:
+    enabled: true
+    weapon:
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+  HOGLIN:
+    enabled: true
+
+  SKELETON:
+    enabled: true
+    weapon:
+      BOW: 0.3
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+      BONE_BLOCK: 0.005
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  WITHER_SKELETON:
+    enabled: true
+    weapon:
+      BOW: 0.3
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+      OBSIDIAN: 0.005
+      CRYING_OBSIDIAN: 0.005
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  STRAY:
+    enabled: true
+    weapon:
+      BOW: 0.3
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+      BONE_BLOCK: 0.005
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  BOGGED:
+    enabled: true
+    weapon:
+      BOW: 0.3
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+      BONE_BLOCK: 0.005
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  HUSK:
+    enabled: true
+    weapon:
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  DROWNED:
+    enabled: true
+    weapon:
+      TRIDENT: 0.001
+      TRIDENT_CHANNELING: 0.0001  # Spawns with Channeling trident (rare)
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  ZOMBIFIED_PIGLIN:
+    enabled: true
+    weapon:
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  ZOGLIN:
+    enabled: true
+
+  ZOMBIE:
+    enabled: true
+    weapon:
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  ZOMBIE_VILLAGER:
+    enabled: true
+    weapon:
+      WOODEN_SWORD: 0.05
+      STONE_SWORD: 0.01
+      IRON_SWORD: 0.009
+      GOLDEN_SWORD: 0.01
+      WOODEN_AXE: 0.03
+      STONE_AXE: 0.02
+      IRON_AXE: 0.01
+      GOLDEN_AXE: 0.02
+      BONE: 0.2
+    helmet:
+      LEATHER_HELMET: 0.10
+      IRON_HELMET: 0.02
+      GOLDEN_HELMET: 0.04
+      CHAINMAIL_HELMET: 0.02
+    chestplate:
+      LEATHER_CHESTPLATE: 0.10
+      IRON_CHESTPLATE: 0.02
+      GOLDEN_CHESTPLATE: 0.04
+      CHAINMAIL_CHESTPLATE: 0.02
+    leggings:
+      LEATHER_LEGGINGS: 0.10
+      IRON_LEGGINGS: 0.02
+      GOLDEN_LEGGINGS: 0.04
+      CHAINMAIL_LEGGINGS: 0.2
+    boots:
+      LEATHER_BOOTS: 0.10
+      IRON_BOOTS: 0.02
+      GOLDEN_BOOTS: 0.04
+      CHAINMAIL_BOOTS: 0.2
+
+  CHICKEN:
+    enabled: true
+
+  SPIDER:
+    enabled: true
