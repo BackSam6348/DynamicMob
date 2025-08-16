@@ -46,10 +46,7 @@ Replace natural spawns with **other mobs** (weighted), give equipment and **vani
 ## 📦 Installation
 
 1. Put the plugin JAR into `plugins/`.  
-2. Use **paper-plugin.yml** only (no `plugin.yml`).  
-3. Start the server to generate `config.yml`.  
-4. Edit `config.yml` to your liking.  
-5. Apply changes with **`/dm reload`**.
+2. Restart server. (We recommend restarting the server using the /restart or /stop commands instead of the /reload command.)
 
 ---
 
