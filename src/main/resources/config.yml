@@ -53,7 +53,6 @@ replacement-spawn:
     ZOMBIE_VILLAGER: 0.04
 
   PIG:
-    PIGLIN: 0.21
     HOGLIN: 0.21
 
   ZOMBIFIED_PIGLIN:
