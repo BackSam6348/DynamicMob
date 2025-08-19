@@ -1,5 +1,5 @@
 name: DynamicMob
-version: '2.2'
+version: '2.3'
 main: me.linhyeok.DynamicMob
 api-version: '1.21'
 folia-supported: true
