@@ -1,59 +1,70 @@
 package me.linhyeok;
 
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 
+/**
+ * DynamicMob - configuration manager
+ * - 월드 화이트리스트(enabled-worlds)
+ * - 각종 스폰/장비/특수 확률 로딩
+ * - EquipmentManager가 요구하는 전역 특수 확률 게터 포함
+ */
 public class ConfigManager {
     private final Plugin plugin;
 
-    // 기본 스폰/설정
+    // ==== 월드 화이트리스트 ====
+    private Set<String> enabledWorlds = new HashSet<>();
+
+    // ==== 기본 스폰/설정 ====
     private double mobSpawnMultiplier = 1.0;
     private boolean enableSpawnEgg = true;
-    private int lightThreshold = 7; // 읽긴 하지만 강제 사용 안 함 (요청 반영 유지)
+    private int lightThreshold = 7;
 
-    // 인첸트 확률
+    // ==== 인첸트 확률 ====
     private double weaponEnchantChance = 1.0;
-    private double armorEnchantChance = 1.0;
+    private double armorEnchantChance  = 1.0;
 
-    // 스페셜
-    private double boneInHandChance = 0.0;
-    private double chargedCreeperChance = 0.0;
-    private double drownedChannelingChance = 0.0;
-
-    // 블록 헬멧
-    private final Map<Material, Double> generalBlockHelmetChances = new HashMap<>();
-    private final Map<Material, Double> skeletonBlockHelmetChances = new HashMap<>();
-
-    // 킬러토끼
-    private boolean killerBunnyEnabled = false;
-    private double killerBunnyChance = 0.0;
-    private boolean killerBunnyApplyNatural = true;
-    private boolean killerBunnyApplySpawner = false;
+    // ==== Killer Bunny ====
+    private boolean killerBunnyEnabled = true;
+    private double  killerBunnyChance  = 0.001;
+    private boolean killerBunnyApplyNatural  = true;
+    private boolean killerBunnyApplySpawner  = false;
     private boolean killerBunnyApplySpawnEgg = true;
 
-    // 조키 확률
+    // ==== 조키 확률 ====
+    // 예: chicken_jockey_chance, spider_jockey_chance
     private final Map<String, Double> jockeyChances = new HashMap<>();
 
-    // 장비/특수 확률 테이블
+    // ==== 엔티티별 장비/특수 확률 및 제한 ====
     // entity -> slot(weapon/helmet/...) -> material -> chance
     private final Map<EntityType, Map<String, Map<Material, Double>>> spawnChances = new EnumMap<>(EntityType.class);
-    // entity -> specialKey -> chance (예: TRIDENT_CHANNELING)
+    // entity -> specialKey(예: "TRIDENT_CHANNELING") -> chance
     private final Map<EntityType, Map<String, Double>> specialChances = new EnumMap<>(EntityType.class);
     private final Set<EntityType> disabledEntities = EnumSet.noneOf(EntityType.class);
-
-    // 자연스폰 확률(개별 엔티티 제한)
+    // 자연 스폰 제한(개별 엔티티 cap)
     private final Map<EntityType, Double> naturalSpawnChance = new EnumMap<>(EntityType.class);
 
-    // 대체 스폰
+    // ==== 대체 스폰 ====
     // source -> (target -> chance)
     private final Map<EntityType, Map<EntityType, Double>> replacementChances = new EnumMap<>(EntityType.class);
-    private boolean replacementApplyNatural = true;
-    private boolean replacementApplySpawner = false;
+    private boolean replacementApplyNatural  = true;
+    private boolean replacementApplySpawner  = false;
     private boolean replacementApplySpawnEgg = false;
+
+    // ==== 블록 헬멧 ====
+    private final Map<Material, Double> generalBlockHelmetChances   = new EnumMap<>(Material.class);
+    private final Map<Material, Double> skeletonBlockHelmetChances  = new EnumMap<>(Material.class);
+    private boolean blockHelmetEnabled = true;
+
+    // ==== EquipmentManager 전역 특수 확률(요구 게터) ====
+    private double boneInHandChance        = 0.0;
+    private double drownedChannelingChance = 0.0;
+    private double chargedCreeperChance    = 0.0;
 
     public ConfigManager(Plugin plugin) {
         this.plugin = plugin;
@@ -61,30 +72,154 @@ public class ConfigManager {
 
     public void reload() {
         plugin.reloadConfig();
-        var cfg = plugin.getConfig();
+        final var cfg = plugin.getConfig();
 
-        // mob-spawn
+        // ---- enabled-worlds ----
+        List<String> worlds = cfg.getStringList("enabled-worlds");
+        if (worlds == null || worlds.isEmpty()) {
+            enabledWorlds = new HashSet<>(Arrays.asList("world", "world_nether", "world_the_end"));
+        } else {
+            enabledWorlds = new HashSet<>(worlds);
+        }
+
+        // ---- mob-spawn ----
         ConfigurationSection mobSpawn = cfg.getConfigurationSection("mob-spawn");
         mobSpawnMultiplier = (mobSpawn != null) ? mobSpawn.getDouble("multiplier", 1.0) : 1.0;
-        enableSpawnEgg = mobSpawn != null && mobSpawn.getBoolean("enable-spawn-egg", true);
+        enableSpawnEgg     = mobSpawn != null && mobSpawn.getBoolean("enable-spawn-egg", true);
 
+        // ---- light-threshold ----
         lightThreshold = cfg.getInt("light-threshold", 7);
 
-        // enchant-chance
+        // ---- enchant-chance ----
         ConfigurationSection enchantSec = cfg.getConfigurationSection("enchant-chance");
-        weaponEnchantChance = enchantSec != null ? enchantSec.getDouble("weapon", 1.0) : 1.0;
-        armorEnchantChance  = enchantSec != null ? enchantSec.getDouble("armor", 1.0)  : 1.0;
+        weaponEnchantChance = (enchantSec != null) ? enchantSec.getDouble("weapon", 1.0) : 1.0;
+        armorEnchantChance  = (enchantSec != null) ? enchantSec.getDouble("armor", 1.0)  : 1.0;
 
-        // special
-        ConfigurationSection special = cfg.getConfigurationSection("special");
-        boneInHandChance = (special != null) ? special.getDouble("bone_in_hand", 0.0) : 0.0;
-        chargedCreeperChance = (special != null) ? special.getDouble("charged_creeper", 0.0) : 0.0;
+        // ---- special root ----
+        ConfigurationSection specialRoot = cfg.getConfigurationSection("special");
 
-        // block_helmet
+        // Killer Bunny
+        if (specialRoot != null) {
+            ConfigurationSection killer = specialRoot.getConfigurationSection("killer_bunny_on_rabbit_spawn");
+            if (killer != null) {
+                killerBunnyEnabled       = killer.getBoolean("enabled", true);
+                killerBunnyChance        = killer.getDouble("chance", 0.001);
+                killerBunnyApplyNatural  = killer.getBoolean("apply-to-natural", true);
+                killerBunnyApplySpawner  = killer.getBoolean("apply-to-spawner", false);
+                killerBunnyApplySpawnEgg = killer.getBoolean("apply-to-spawn-egg", true);
+            }
+
+            // EquipmentManager 전역 특수 확률
+            boneInHandChance        = specialRoot.getDouble("bone_in_hand_chance", 0.0);
+            drownedChannelingChance = specialRoot.getDouble("drowned_channeling_chance", 0.0);
+            chargedCreeperChance    = specialRoot.getDouble("charged_creeper_chance", 0.0);
+        }
+
+        // ---- jockey-chance ----
+        jockeyChances.clear();
+        ConfigurationSection jcs = cfg.getConfigurationSection("jockey-chance");
+        if (jcs != null) {
+            for (String key : jcs.getKeys(false)) {
+                jockeyChances.put(key.toLowerCase(Locale.ROOT), jcs.getDouble(key, 0.0));
+            }
+        }
+
+        // ---- spawn-chance & entity specials ----
+        spawnChances.clear();
+        specialChances.clear();
+        disabledEntities.clear();
+        naturalSpawnChance.clear();
+
+        ConfigurationSection spawnSec = cfg.getConfigurationSection("spawn-chance");
+        if (spawnSec != null) {
+            for (String etName : spawnSec.getKeys(false)) {
+                EntityType type;
+                try {
+                    type = EntityType.valueOf(etName.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("Unknown entity type in spawn-chance: " + etName);
+                    continue;
+                }
+                ConfigurationSection entSec = spawnSec.getConfigurationSection(etName);
+                if (entSec == null) continue;
+
+                // enable/disable
+                boolean enabled = entSec.getBoolean("enabled", true);
+                if (!enabled) disabledEntities.add(type);
+
+                // natural-limit
+                if (entSec.isSet("natural-limit")) {
+                    naturalSpawnChance.put(type, entSec.getDouble("natural-limit", 1.0));
+                }
+
+                // equipment chances
+                Map<String, Map<Material, Double>> slotMap = new HashMap<>();
+                for (String slot : Arrays.asList("weapon", "helmet", "chestplate", "leggings", "boots")) {
+                    ConfigurationSection slotSec = entSec.getConfigurationSection(slot);
+                    if (slotSec != null) {
+                        Map<Material, Double> m = new EnumMap<>(Material.class);
+                        for (String matName : slotSec.getKeys(false)) {
+                            try {
+                                m.put(Material.valueOf(matName.toUpperCase(Locale.ROOT)), slotSec.getDouble(matName, 0.0));
+                            } catch (IllegalArgumentException e) {
+                                plugin.getLogger().warning("Invalid material in " + etName + "." + slot + ": " + matName);
+                            }
+                        }
+                        slotMap.put(slot, m);
+                    }
+                }
+                spawnChances.put(type, slotMap);
+
+                // entity special chances
+                Map<String, Double> spec = new HashMap<>();
+                ConfigurationSection entSpecSec = entSec.getConfigurationSection("special");
+                if (entSpecSec != null) {
+                    for (String k : entSpecSec.getKeys(false)) {
+                        spec.put(k.toUpperCase(Locale.ROOT), entSpecSec.getDouble(k, 0.0));
+                    }
+                }
+                specialChances.put(type, spec);
+            }
+        }
+
+        // ---- replacement-spawn ----
+        replacementChances.clear();
+        ConfigurationSection rep = cfg.getConfigurationSection("replacement-spawn");
+        if (rep != null) {
+            for (String srcName : rep.getKeys(false)) {
+                EntityType src;
+                try {
+                    src = EntityType.valueOf(srcName.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("Unknown entity type in replacement-spawn: " + srcName);
+                    continue;
+                }
+                ConfigurationSection m = rep.getConfigurationSection(srcName);
+                if (m == null) continue;
+
+                Map<EntityType, Double> inner = new EnumMap<>(EntityType.class);
+                for (String tgtName : m.getKeys(false)) {
+                    try {
+                        inner.put(EntityType.valueOf(tgtName.toUpperCase(Locale.ROOT)), m.getDouble(tgtName, 0.0));
+                    } catch (IllegalArgumentException e) {
+                        plugin.getLogger().warning("Unknown target entity in replacement-spawn." + srcName + ": " + tgtName);
+                    }
+                }
+                replacementChances.put(src, inner);
+            }
+        }
+
+        // ---- replacement toggles ----
+        ConfigurationSection repTog = cfg.getConfigurationSection("replacement-toggles");
+        replacementApplyNatural  = repTog != null && repTog.getBoolean("apply-to-natural", true);
+        replacementApplySpawner  = repTog != null && repTog.getBoolean("apply-to-spawner", false);
+        replacementApplySpawnEgg = repTog != null && repTog.getBoolean("apply-to-spawn-egg", false);
+
+        // ---- block_helmet ----
         generalBlockHelmetChances.clear();
         skeletonBlockHelmetChances.clear();
-        if (special != null) {
-            ConfigurationSection bh = special.getConfigurationSection("block_helmet");
+        if (specialRoot != null) {
+            ConfigurationSection bh = specialRoot.getConfigurationSection("block_helmet");
             if (bh != null) {
                 ConfigurationSection general = bh.getConfigurationSection("general");
                 if (general != null) {
@@ -96,169 +231,68 @@ public class ConfigManager {
                         }
                     }
                 }
-                ConfigurationSection skeleton = bh.getConfigurationSection("skeleton");
+                ConfigurationSection skeleton = bh.getConfigurationSection("skeleton-only");
                 if (skeleton != null) {
                     for (String k : skeleton.getKeys(false)) {
                         try {
                             skeletonBlockHelmetChances.put(Material.valueOf(k.toUpperCase(Locale.ROOT)), skeleton.getDouble(k, 0.0));
                         } catch (IllegalArgumentException e) {
-                            plugin.getLogger().warning("Invalid block_helmet.skeleton material: " + k);
+                            plugin.getLogger().warning("Invalid block_helmet.skeleton-only material: " + k);
                         }
                     }
                 }
-            }
-        }
-
-        // killer bunny
-        if (special != null) {
-            ConfigurationSection kb = special.getConfigurationSection("killer_bunny_on_rabbit_spawn");
-            if (kb != null) {
-                killerBunnyEnabled = kb.getBoolean("enabled", false);
-                killerBunnyChance = kb.getDouble("chance", 0.0);
-                ConfigurationSection applyTo = kb.getConfigurationSection("apply-to");
-                if (applyTo != null) {
-                    killerBunnyApplyNatural = applyTo.getBoolean("natural", true);
-                    killerBunnyApplySpawner = applyTo.getBoolean("spawner", false);
-                    killerBunnyApplySpawnEgg = applyTo.getBoolean("spawn-egg", true);
-                }
-            }
-        }
-
-        // jockey-chance
-        jockeyChances.clear();
-        ConfigurationSection jockey = cfg.getConfigurationSection("jockey-chance");
-        if (jockey != null) {
-            for (String key : jockey.getKeys(false)) {
-                jockeyChances.put(key, jockey.getDouble(key, 0.0));
-            }
-        }
-
-        // spawn-settings
-        spawnChances.clear();
-        specialChances.clear();
-        disabledEntities.clear();
-        ConfigurationSection spawnSettings = cfg.getConfigurationSection("spawn-settings");
-        if (spawnSettings != null) {
-            for (String entityKey : spawnSettings.getKeys(false)) {
-                EntityType type;
-                try { type = EntityType.valueOf(entityKey); }
-                catch (Exception ignored) { continue; }
-                ConfigurationSection eqSection = spawnSettings.getConfigurationSection(entityKey);
-                if (eqSection == null) continue;
-
-                if (!eqSection.getBoolean("enabled", true)) {
-                    disabledEntities.add(type);
-                    continue;
-                }
-
-                Map<String, Map<Material, Double>> slotMap = new HashMap<>();
-                Map<String, Double> slotSpecial = new HashMap<>();
-
-                for (String slot : eqSection.getKeys(false)) {
-                    if ("enabled".equals(slot)) continue;
-                    ConfigurationSection slotSection = eqSection.getConfigurationSection(slot);
-                    if (slotSection == null) continue;
-
-                    Map<Material, Double> chanceMap = new HashMap<>();
-                    for (String materialKey : slotSection.getKeys(false)) {
-                        try {
-                            chanceMap.put(Material.valueOf(materialKey), slotSection.getDouble(materialKey));
-                        } catch (IllegalArgumentException e) {
-                            // 특수 키 (TRIDENT_CHANNELING 등)
-                            slotSpecial.put(materialKey, slotSection.getDouble(materialKey));
-                        }
-                    }
-                    slotMap.put(slot, chanceMap);
-                }
-
-                spawnChances.put(type, slotMap);
-                if (!slotSpecial.isEmpty()) specialChances.put(type, slotSpecial);
-            }
-        }
-
-        // drowned channeling 확률 별도 저장
-        drownedChannelingChance = 0.0;
-        if (specialChances.containsKey(EntityType.DROWNED)) {
-            drownedChannelingChance = specialChances.get(EntityType.DROWNED).getOrDefault("TRIDENT_CHANNELING", 0.0);
-        }
-
-        // 자연스폰 확률
-        naturalSpawnChance.clear();
-        ConfigurationSection chanceSection = cfg.getConfigurationSection("spawn-chance");
-        if (chanceSection != null) {
-            for (String key : chanceSection.getKeys(false)) {
-                try {
-                    EntityType type = EntityType.valueOf(key);
-                    naturalSpawnChance.put(type, chanceSection.getDouble(key, 1.0));
-                } catch (Exception ignored) {}
-            }
-        }
-
-        // replacement
-        replacementChances.clear();
-        ConfigurationSection replApply = cfg.getConfigurationSection("replacement");
-        if (replApply != null) {
-            replacementApplyNatural = replApply.getBoolean("apply-to-natural", true);
-            replacementApplySpawner = replApply.getBoolean("apply-to-spawner", false);
-            replacementApplySpawnEgg = replApply.getBoolean("apply-to-spawn-egg", false);
-        }
-
-        ConfigurationSection repl = cfg.getConfigurationSection("replacement-spawn");
-        if (repl != null) {
-            for (String srcKey : repl.getKeys(false)) {
-                try {
-                    EntityType src = EntityType.valueOf(srcKey);
-                    ConfigurationSection inner = repl.getConfigurationSection(srcKey);
-                    if (inner == null) continue;
-                    Map<EntityType, Double> map = new HashMap<>();
-                    for (String dstKey : inner.getKeys(false)) {
-                        try {
-                            EntityType dst = EntityType.valueOf(dstKey);
-                            double v = inner.getDouble(dstKey, 0.0);
-                            if (v > 0) map.put(dst, v);
-                        } catch (IllegalArgumentException ignored) {
-                            plugin.getLogger().warning("Invalid replacement target: " + dstKey);
-                        }
-                    }
-                    replacementChances.put(src, map);
-                } catch (IllegalArgumentException ignored) {
-                    plugin.getLogger().warning("Invalid replacement source: " + srcKey);
-                }
+                blockHelmetEnabled = bh.getBoolean("enabled", true);
             }
         }
     }
 
-    // ======= Getters =======
+    // ===== Getter =====
+
+    // 기본 스폰/설정
     public double getMobSpawnMultiplier() { return mobSpawnMultiplier; }
-    public boolean isEnableSpawnEgg() { return enableSpawnEgg; }
-    public int getLightThreshold() { return lightThreshold; } // 현재 강제 적용 안 함 (요청에 따라 유지)
+    public boolean isEnableSpawnEgg()     { return enableSpawnEgg; }
+    public int getLightThreshold()        { return lightThreshold; }
 
+    // 인첸트 확률
     public double getWeaponEnchantChance() { return weaponEnchantChance; }
-    public double getArmorEnchantChance() { return armorEnchantChance; }
+    public double getArmorEnchantChance()  { return armorEnchantChance; }
 
-    public double getBoneInHandChance() { return boneInHandChance; }
-    public double getChargedCreeperChance() { return chargedCreeperChance; }
-    public double getDrownedChannelingChance() { return drownedChannelingChance; }
+    // Killer Bunny
+    public boolean isKillerBunnyEnabled()         { return killerBunnyEnabled; }
+    public double  getKillerBunnyChance()         { return killerBunnyChance; }
+    public boolean isKillerBunnyApplyNatural()    { return killerBunnyApplyNatural; }
+    public boolean isKillerBunnyApplySpawner()    { return killerBunnyApplySpawner; }
+    public boolean isKillerBunnyApplySpawnEgg()   { return killerBunnyApplySpawnEgg; }
 
-    public Map<Material, Double> getGeneralBlockHelmetChances() { return generalBlockHelmetChances; }
-    public Map<Material, Double> getSkeletonBlockHelmetChances() { return skeletonBlockHelmetChances; }
-
-    public boolean isKillerBunnyEnabled() { return killerBunnyEnabled; }
-    public double getKillerBunnyChance() { return killerBunnyChance; }
-    public boolean isKillerBunnyApplyNatural() { return killerBunnyApplyNatural; }
-    public boolean isKillerBunnyApplySpawner() { return killerBunnyApplySpawner; }
-    public boolean isKillerBunnyApplySpawnEgg() { return killerBunnyApplySpawnEgg; }
-
+    // 조키/스폰/특수/비활성/자연 제한
     public Map<String, Double> getJockeyChances() { return jockeyChances; }
-
     public Map<EntityType, Map<String, Map<Material, Double>>> getSpawnChances() { return spawnChances; }
-    public Map<EntityType, Map<String, Double>> getSpecialChances() { return specialChances; }
-    public Set<EntityType> getDisabledEntities() { return disabledEntities; }
+    public Map<EntityType, Map<String, Double>> getSpecialChances()              { return specialChances; }
+    public Set<EntityType> getDisabledEntities()                                  { return disabledEntities; }
+    public Map<EntityType, Double> getNaturalSpawnChance()                        { return naturalSpawnChance; }
 
-    public Map<EntityType, Double> getNaturalSpawnChance() { return naturalSpawnChance; }
-
+    // 대체 스폰
     public Map<EntityType, Map<EntityType, Double>> getReplacementChances() { return replacementChances; }
-    public boolean isReplacementApplyNatural() { return replacementApplyNatural; }
-    public boolean isReplacementApplySpawner() { return replacementApplySpawner; }
-    public boolean isReplacementApplySpawnEgg() { return replacementApplySpawnEgg; }
+    public boolean isReplacementApplyNatural()   { return replacementApplyNatural; }
+    public boolean isReplacementApplySpawner()   { return replacementApplySpawner; }
+    public boolean isReplacementApplySpawnEgg()  { return replacementApplySpawnEgg; }
+
+    // 블록 헬멧
+    public Map<Material, Double> getGeneralBlockHelmetChances()  { return generalBlockHelmetChances; }
+    public Map<Material, Double> getSkeletonBlockHelmetChances() { return skeletonBlockHelmetChances; }
+    public boolean isBlockHelmetEnabled()                         { return blockHelmetEnabled; }
+
+    // 월드 화이트리스트
+    public Set<String> getEnabledWorlds() {
+        return Collections.unmodifiableSet(enabledWorlds);
+    }
+    public boolean isWorldEnabled(World world) {
+        if (world == null) return false;
+        return enabledWorlds.contains(world.getName());
+    }
+
+    // EquipmentManager 전역 특수 확률
+    public double getBoneInHandChance()        { return boneInHandChance; }
+    public double getDrownedChannelingChance() { return drownedChannelingChance; }
+    public double getChargedCreeperChance()    { return chargedCreeperChance; }
 }

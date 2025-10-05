@@ -29,6 +29,10 @@ public class SpawnListener implements Listener {
         Entity entity = event.getEntity();
         CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
 
+        // 월드별 동작 가드
+        World w = entity.getWorld();
+        if (!cfg.isWorldEnabled(w)) return;
+
         // --- Killer Bunny (토끼 스폰 시 변환)
         if (entity instanceof Rabbit rabbit) {
             if (cfg.isKillerBunnyEnabled() && shouldApplyForReason(reason,
@@ -37,27 +41,19 @@ public class SpawnListener implements Listener {
                     try {
                         rabbit.setRabbitType(Rabbit.Type.THE_KILLER_BUNNY);
                     } catch (Throwable t) {
-                        // 버전에 따라 비허용인 경우도 있으므로 실패해도 무시
                         plugin.getLogger().warning("Failed to set Killer Bunny type (ignored).");
                     }
                 }
             }
-            // 토끼는 여기서 종료 (나머지 로직은 몬스터 처리)
         }
 
-        // --- Replacement (대체 스폰)
+        // 비활성화된 엔티티면 즉시 중단
+        if (cfg.getDisabledEntities().contains(entity.getType())) return;
+
+        // --- 대체 스폰 처리 ---
         if (shouldApplyReplacementForReason(reason)) {
             if (tryReplacement(event)) {
-                return; // 대체 성공 시 함수 종료 (대체 엔티티는 커스텀 스폰에서 처리됨)
-            }
-        }
-
-        // --- NATURAL 스폰 확률 제한 (원본 엔티티에만, 대체 성공 시엔 이미 return)
-        if (reason == CreatureSpawnEvent.SpawnReason.NATURAL) {
-            double chance = cfg.getNaturalSpawnChance().getOrDefault(entity.getType(), 1.0);
-            if (random.nextDouble() >= chance) {
-                event.setCancelled(true);
-                return;
+                return; // 원래 스폰 취소 후 대체 성공
             }
         }
 
@@ -78,9 +74,11 @@ public class SpawnListener implements Listener {
         }
     }
 
-    // 변환(좀비화) 방지
     @EventHandler
     public void onTransform(EntityTransformEvent event) {
+        // 월드별 동작 가드 (좀비화/변형 이벤트)
+        if (!cfg.isWorldEnabled(event.getEntity().getWorld())) return;
+
         EntityType from = event.getEntityType();
         EntityType to = event.getTransformedEntity().getType();
         if ((from == EntityType.PIGLIN || from == EntityType.PIGLIN_BRUTE || from == EntityType.HOGLIN)
@@ -109,103 +107,66 @@ public class SpawnListener implements Listener {
 
     private boolean tryReplacement(CreatureSpawnEvent event) {
         Entity entity = event.getEntity();
-        var map = cfg.getReplacementChances().get(entity.getType());
-        if (map == null || map.isEmpty()) return false;
+        Map<EntityType, Double> table = cfg.getReplacementChances().get(entity.getType());
+        if (table == null || table.isEmpty()) return false;
 
-        // 누적 확률로 하나 고르기
-        double roll = random.nextDouble();
-        double cumulative = 0.0;
-        for (Map.Entry<EntityType, Double> e : map.entrySet()) {
-            cumulative += e.getValue();
-            if (roll < cumulative) {
-                // 원본 취소 후 대체 엔티티 커스텀 스폰
+        double r = random.nextDouble();
+        double acc = 0.0;
+        for (Map.Entry<EntityType, Double> e : table.entrySet()) {
+            acc += e.getValue();
+            if (r < acc) {
+                // 대체 스폰
+                Location loc = entity.getLocation();
+                Entity spawned = loc.getWorld().spawnEntity(loc, e.getKey());
+                if (spawned instanceof LivingEntity le) {
+                    equip.applyAll(le);
+                }
                 event.setCancelled(true);
-                spawnReplacement(entity.getLocation(), e.getKey());
                 return true;
             }
         }
         return false;
     }
 
-    private void spawnReplacement(Location loc, EntityType targetType) {
-        World world = loc.getWorld();
-        if (world == null) return;
-        Entity spawned = world.spawnEntity(loc, targetType, CreatureSpawnEvent.SpawnReason.CUSTOM);
-
-        // 면역/장비 등 적용
-        applyPiglinHoglinImmunity(spawned);
-        if (spawned instanceof LivingEntity le) {
-            equip.applyAll(le);
-        }
-    }
-
     private boolean shouldMultiply(Entity entity, CreatureSpawnEvent.SpawnReason reason) {
-        if (!(entity instanceof Monster)) return false;
-        EntityType type = entity.getType();
-        if (type == EntityType.ENDER_DRAGON || type == EntityType.WITHER || type == EntityType.WARDEN) return false;
-        if (cfg.getMobSpawnMultiplier() <= 1.01) return false;
-        return reason == CreatureSpawnEvent.SpawnReason.NATURAL;
+        if (reason != CreatureSpawnEvent.SpawnReason.NATURAL) return false;
+        if (entity instanceof Boss) return false;
+        return cfg.getMobSpawnMultiplier() > 1.01;
     }
 
     private void multiply(Entity entity) {
-        int extra = (int) Math.round(cfg.getMobSpawnMultiplier() - 1);
-        if (extra <= 0) return;
-        World w = entity.getWorld();
+        double mult = cfg.getMobSpawnMultiplier();
+        int extra = (int) Math.floor(mult) - 1;
+        double frac = mult - Math.floor(mult);
+
         Location loc = entity.getLocation();
         for (int i = 0; i < extra; i++) {
-            Entity dup = w.spawnEntity(loc, entity.getType(), CreatureSpawnEvent.SpawnReason.CUSTOM);
-            applyPiglinHoglinImmunity(dup);
-            if (dup instanceof LivingEntity le) equip.applyAll(le);
+            loc.getWorld().spawnEntity(loc, entity.getType());
+        }
+        if (random.nextDouble() < frac) {
+            loc.getWorld().spawnEntity(loc, entity.getType());
         }
     }
 
-    // 조키 처리 (원래 엔티티 취소 후 커스텀 스폰)
     private boolean handleJockeys(Entity entity, CreatureSpawnEvent event) {
-        EntityType type = entity.getType();
-        Location loc = entity.getLocation();
-        World world = entity.getWorld();
-
-        // 베이비 좀비류 치킨 조키
-        if ((type == EntityType.ZOMBIE || type == EntityType.HUSK || type == EntityType.DROWNED
-                || type == EntityType.ZOMBIFIED_PIGLIN || type == EntityType.ZOMBIE_VILLAGER)
-                && entity instanceof Zombie zombie && zombie.isBaby()) {
-
-            String key = switch (type) {
-                case ZOMBIE -> "baby_zombie_chicken_jockey";
-                case HUSK -> "baby_husk_chicken_jockey";
-                case DROWNED -> "baby_drowned_chicken_jockey";
-                case ZOMBIFIED_PIGLIN -> "baby_zombified_piglin_chicken_jockey";
-                case ZOMBIE_VILLAGER -> "baby_zombie_villager_chicken_jockey";
-                default -> "";
-            };
-            double chance = cfg.getJockeyChances().getOrDefault(key, 0.0);
+        if (entity.getType() == EntityType.CHICKEN) {
+            double chance = cfg.getJockeyChances().getOrDefault("chicken_jockey_chance", 0.0);
             if (random.nextDouble() < chance) {
-                event.setCancelled(true);
-                Chicken chicken = (Chicken) world.spawnEntity(loc, EntityType.CHICKEN, CreatureSpawnEvent.SpawnReason.CUSTOM);
-                LivingEntity baby = (LivingEntity) world.spawnEntity(loc, type, CreatureSpawnEvent.SpawnReason.CUSTOM);
-                if (baby instanceof Zombie bz) bz.setBaby(true);
-                chicken.addPassenger(baby);
-                applyPiglinHoglinImmunity(baby);
-                equip.applyAll(baby);
-                return true;
+                Entity rider = entity.getWorld().spawnEntity(entity.getLocation(), EntityType.ZOMBIE);
+                if (rider instanceof Zombie zombie) {
+                    // ✅ 올바른 방법: 차량(닭)에 승객(좀비)을 태움
+                    entity.addPassenger(zombie);
+                    equip.applyAll(zombie);
+                    event.setCancelled(true);
+                    return true;
+                }
             }
-        }
-
-        // 스켈레톤 계열 스파이더 조키
-        if (type == EntityType.SKELETON || type == EntityType.STRAY
-                || type == EntityType.WITHER_SKELETON || type == EntityType.BOGGED) {
-            String key = switch (type) {
-                case SKELETON -> "skeleton_spider_jockey";
-                case STRAY -> "stray_spider_jockey";
-                case WITHER_SKELETON -> "wither_skeleton_spider_jockey";
-                case BOGGED -> "bogged_spider_jockey";
-                default -> "";
-            };
-            double chance = cfg.getJockeyChances().getOrDefault(key, 0.0);
+        } else if (entity.getType() == EntityType.SPIDER) {
+            double chance = cfg.getJockeyChances().getOrDefault("spider_jockey_chance", 0.0);
             if (random.nextDouble() < chance) {
-                event.setCancelled(true);
-                Spider spider = (Spider) world.spawnEntity(loc, EntityType.SPIDER, CreatureSpawnEvent.SpawnReason.CUSTOM);
-                LivingEntity skele = (LivingEntity) world.spawnEntity(loc, type, CreatureSpawnEvent.SpawnReason.CUSTOM);
+                Location loc = entity.getLocation();
+                Spider spider = (Spider) entity;
+                Skeleton skele = (Skeleton) loc.getWorld().spawnEntity(loc, EntityType.SKELETON);
                 spider.addPassenger(skele);
                 equip.applyAll(skele);
                 return true;
