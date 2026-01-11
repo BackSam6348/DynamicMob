@@ -37,20 +37,15 @@ public class ConfigManager {
     private boolean killerBunnyApplySpawnEgg = true;
 
     // ==== 조키 확률 ====
-    // 예: chicken_jockey_chance, spider_jockey_chance
     private final Map<String, Double> jockeyChances = new HashMap<>();
 
     // ==== 엔티티별 장비/특수 확률 및 제한 ====
-    // entity -> slot(weapon/helmet/...) -> material -> chance
     private final Map<EntityType, Map<String, Map<Material, Double>>> spawnChances = new EnumMap<>(EntityType.class);
-    // entity -> specialKey(예: "TRIDENT_CHANNELING") -> chance
     private final Map<EntityType, Map<String, Double>> specialChances = new EnumMap<>(EntityType.class);
     private final Set<EntityType> disabledEntities = EnumSet.noneOf(EntityType.class);
-    // 자연 스폰 제한(개별 엔티티 cap)
     private final Map<EntityType, Double> naturalSpawnChance = new EnumMap<>(EntityType.class);
 
     // ==== 대체 스폰 ====
-    // source -> (target -> chance)
     private final Map<EntityType, Map<EntityType, Double>> replacementChances = new EnumMap<>(EntityType.class);
     private boolean replacementApplyNatural  = true;
     private boolean replacementApplySpawner  = false;
@@ -61,10 +56,15 @@ public class ConfigManager {
     private final Map<Material, Double> skeletonBlockHelmetChances  = new EnumMap<>(Material.class);
     private boolean blockHelmetEnabled = true;
 
-    // ==== EquipmentManager 전역 특수 확률(요구 게터) ====
+    // ==== EquipmentManager 전역 특수 확률 ====
     private double boneInHandChance        = 0.0;
     private double drownedChannelingChance = 0.0;
     private double chargedCreeperChance    = 0.0;
+
+    // ==== Vindicator/Illusioner 손 아이템 ====
+    private Material vindicatorHandItem = null;
+    private Material illusionerHandItem = null;
+    private double illusionerFlameChance = 0.0;
 
     public ConfigManager(Plugin plugin) {
         this.plugin = plugin;
@@ -113,6 +113,34 @@ public class ConfigManager {
             boneInHandChance        = specialRoot.getDouble("bone_in_hand_chance", 0.0);
             drownedChannelingChance = specialRoot.getDouble("drowned_channeling_chance", 0.0);
             chargedCreeperChance    = specialRoot.getDouble("charged_creeper_chance", 0.0);
+
+            // Vindicator/Illusioner 손 아이템
+            String vindicatorItemStr = specialRoot.getString("vindicator_hand_item", null);
+            if (vindicatorItemStr != null && !vindicatorItemStr.equalsIgnoreCase("NONE")) {
+                try {
+                    vindicatorHandItem = Material.valueOf(vindicatorItemStr.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("Invalid vindicator_hand_item: " + vindicatorItemStr);
+                    vindicatorHandItem = null;
+                }
+            } else {
+                vindicatorHandItem = null;
+            }
+
+            String illusionerItemStr = specialRoot.getString("illusioner_hand_item", null);
+            if (illusionerItemStr != null && !illusionerItemStr.equalsIgnoreCase("NONE")) {
+                try {
+                    illusionerHandItem = Material.valueOf(illusionerItemStr.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("Invalid illusioner_hand_item: " + illusionerItemStr);
+                    illusionerHandItem = null;
+                }
+            } else {
+                illusionerHandItem = null;
+            }
+
+            // Illusioner Flame 인챈트 확률
+            illusionerFlameChance = specialRoot.getDouble("illusioner_flame_chance", 0.0);
         }
 
         // ---- jockey-chance ----
@@ -201,7 +229,7 @@ public class ConfigManager {
                 for (String tgtName : m.getKeys(false)) {
                     try {
                         inner.put(EntityType.valueOf(tgtName.toUpperCase(Locale.ROOT)), m.getDouble(tgtName, 0.0));
-                    } catch (IllegalArgumentException e) {
+                    } catch (IllegalArgumentException e1) {
                         plugin.getLogger().warning("Unknown target entity in replacement-spawn." + srcName + ": " + tgtName);
                     }
                 }
@@ -218,8 +246,9 @@ public class ConfigManager {
         // ---- block_helmet ----
         generalBlockHelmetChances.clear();
         skeletonBlockHelmetChances.clear();
-        if (specialRoot != null) {
-            ConfigurationSection bh = specialRoot.getConfigurationSection("block_helmet");
+        ConfigurationSection specialRoot2 = cfg.getConfigurationSection("special");
+        if (specialRoot2 != null) {
+            ConfigurationSection bh = specialRoot2.getConfigurationSection("block_helmet");
             if (bh != null) {
                 ConfigurationSection general = bh.getConfigurationSection("general");
                 if (general != null) {
@@ -295,4 +324,9 @@ public class ConfigManager {
     public double getBoneInHandChance()        { return boneInHandChance; }
     public double getDrownedChannelingChance() { return drownedChannelingChance; }
     public double getChargedCreeperChance()    { return chargedCreeperChance; }
+
+    // Vindicator/Illusioner 손 아이템
+    public Material getVindicatorHandItem() { return vindicatorHandItem; }
+    public Material getIllusionerHandItem() { return illusionerHandItem; }
+    public double getIllusionerFlameChance() { return illusionerFlameChance; }
 }
