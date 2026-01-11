@@ -21,12 +21,17 @@ public class EquipmentManager {
         this.cfg = cfg;
     }
 
-    /** 엔티티에 커스텀 장비/블록헬멧/특수효과/인첸트 적용 */
+    /** 엔티티에 커스텀 장비/블록헬멧/특수효과/인챈트 적용 */
     public void applyAll(LivingEntity mob) {
         if (cfg.getDisabledEntities().contains(mob.getType())) return;
 
         EntityEquipment eq = mob.getEquipment();
         if (eq == null) return;
+
+        // 약탈자는 바닐라 장비 유지 (아무것도 하지 않음)
+        if (mob instanceof Pillager) {
+            return;
+        }
 
         // 기본 장비 확률 테이블
         Map<String, Map<Material, Double>> chances = cfg.getSpawnChances().getOrDefault(mob.getType(), Collections.emptyMap());
@@ -38,12 +43,43 @@ public class EquipmentManager {
         eq.setLeggings(getRandomItem(chances.get("leggings"), null));
         eq.setBoots(getRandomItem(chances.get("boots"), null));
 
-        // 블록 헬멧 (일반 + 스켈레톤 계열 전용)
-        applyBlockHelmetIfAny(mob);
+        // 블록 헬멧 (일반 + 스켈레톤 계열 전용) - 헬멧이 비어있을 때만 적용
+        if (cfg.isBlockHelmetEnabled()) {
+            applyBlockHelmetIfEmpty(mob);
+        }
 
         // 스켈레톤 뼈다귀 손(확률)
         if (mob instanceof Skeleton && random.nextDouble() < cfg.getBoneInHandChance()) {
             eq.setItemInMainHand(new ItemStack(Material.BONE));
+        }
+
+        // 우민(Vindicator) 손 아이템 교체 - 도끼 종류만 허용
+        if (mob instanceof Vindicator vindicator) {
+            Material vindicatorItem = cfg.getVindicatorHandItem();
+            if (vindicatorItem != null && isAxe(vindicatorItem)) {
+                eq.setItemInMainHand(new ItemStack(vindicatorItem));
+            } else if (vindicatorItem != null) {
+                // 도끼가 아닌 아이템이 설정된 경우 경고
+                plugin.getLogger().warning("Vindicator hand item must be an axe type. Invalid item: " + vindicatorItem);
+            }
+        }
+
+        // 환술사(Illusioner) 손 아이템 교체 - 활만 허용
+        if (mob instanceof Illusioner illusioner) {
+            Material illusionerItem = cfg.getIllusionerHandItem();
+            if (illusionerItem == Material.BOW) {
+                ItemStack bow = new ItemStack(Material.BOW);
+
+                // 활 인챈트 확률 적용
+                if (cfg.getIllusionerFlameChance() > 0 && random.nextDouble() < cfg.getIllusionerFlameChance()) {
+                    bow.addUnsafeEnchantment(Enchantment.FLAME, 1);
+                }
+
+                eq.setItemInMainHand(bow);
+            } else if (illusionerItem != null) {
+                // 활이 아닌 아이템이 설정된 경우 경고
+                plugin.getLogger().warning("Illusioner hand item must be BOW. Invalid item: " + illusionerItem);
+            }
         }
 
         // 드라운드: 채널링 삼지창 확률
@@ -57,21 +93,53 @@ public class EquipmentManager {
 
         // 충전 크리퍼
         if (mob instanceof Creeper creeper && cfg.getChargedCreeperChance() > 0) {
-            if (random.nextDouble() < cfg.getChargedCreeperChance()) creeper.setPowered(true);
+            if (random.nextDouble() < cfg.getChargedCreeperChance()) {
+                creeper.setPowered(true);
+            }
         }
 
-        // 인첸트 (무기/방어구)
+        // 인챈트 (무기/방어구)
         applyEnchantments(mob, eq);
     }
 
-    private void applyBlockHelmetIfAny(LivingEntity mob) {
+    /**
+     * 도끼 타입인지 확인
+     */
+    private boolean isAxe(Material material) {
+        return material == Material.WOODEN_AXE ||
+                material == Material.STONE_AXE ||
+                material == Material.IRON_AXE ||
+                material == Material.GOLDEN_AXE ||
+                material == Material.DIAMOND_AXE ||
+                material == Material.NETHERITE_AXE;
+    }
+
+    /**
+     * 블록 헬멧 - 헬멧 슬롯이 비어있을 때만 적용
+     */
+    private void applyBlockHelmetIfEmpty(LivingEntity mob) {
         EntityEquipment eq = mob.getEquipment();
         if (eq == null) return;
+
+        // 헬멧이 이미 있으면 적용 안함
+        ItemStack currentHelmet = eq.getHelmet();
+        if (currentHelmet != null && currentHelmet.getType() != Material.AIR) {
+            return;
+        }
+
+        // PARCHED 타입 지원
+        EntityType parchedType = null;
+        try {
+            parchedType = EntityType.valueOf("PARCHED");
+        } catch (IllegalArgumentException e) {
+            // PARCHED 타입이 없으면 null로 유지
+        }
 
         boolean isSkeletonFamily = mob.getType() == EntityType.SKELETON
                 || mob.getType() == EntityType.STRAY
                 || mob.getType() == EntityType.WITHER_SKELETON
-                || mob.getType() == EntityType.BOGGED;
+                || mob.getType() == EntityType.BOGGED
+                || (parchedType != null && mob.getType() == parchedType);
 
         Map<Material, Double> pool = new HashMap<>(cfg.getGeneralBlockHelmetChances());
         if (isSkeletonFamily) {
@@ -126,10 +194,19 @@ public class EquipmentManager {
     private void applyEnchantments(LivingEntity mob, EntityEquipment eq) {
         if (eq == null) return;
 
+        // PARCHED 타입 지원
+        EntityType parchedType = null;
+        try {
+            parchedType = EntityType.valueOf("PARCHED");
+        } catch (IllegalArgumentException e) {
+            // PARCHED 타입이 없으면 null로 유지
+        }
+
         boolean isSkeleton = mob.getType() == EntityType.SKELETON
                 || mob.getType() == EntityType.STRAY
                 || mob.getType() == EntityType.WITHER_SKELETON
-                || mob.getType() == EntityType.BOGGED;
+                || mob.getType() == EntityType.BOGGED
+                || (parchedType != null && mob.getType() == parchedType);
 
         boolean isZombie = mob.getType() == EntityType.ZOMBIE
                 || mob.getType() == EntityType.HUSK
@@ -142,7 +219,7 @@ public class EquipmentManager {
 
         boolean targetFamily = isSkeleton || isZombie || isPiglin;
 
-        // 무기
+        // 무기 인챈트
         ItemStack main = eq.getItemInMainHand();
         if (main != null && main.getType() != Material.AIR) {
             boolean isDrownedTrident = (mob.getType() == EntityType.DROWNED) && (main.getType() == Material.TRIDENT);
@@ -181,7 +258,7 @@ public class EquipmentManager {
             }
         }
 
-        // 방어구
+        // 방어구 인챈트
         if (targetFamily) {
             enchantArmorPiece(eq.getHelmet(), EquipmentSlot.HEAD);
             enchantArmorPiece(eq.getChestplate(), EquipmentSlot.CHEST);
