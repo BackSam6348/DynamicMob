@@ -106,7 +106,8 @@ public class EquipmentManager {
         }
 
         // 우민(Vindicator) 손 아이템 교체 - 도끼 종류만 허용
-        if (mob instanceof Vindicator vindicator) {
+        // 대체 스폰으로 생성된 경우에도 커스텀 장비 적용
+        if (mob instanceof Vindicator) {
             Material vindicatorItem = cfg.getVindicatorHandItem();
             if (vindicatorItem != null && isAxe(vindicatorItem)) {
                 eq.setItemInMainHand(new ItemStack(vindicatorItem));
@@ -117,7 +118,7 @@ public class EquipmentManager {
         }
 
         // 환술사(Illusioner) 손 아이템 교체 - 활만 허용
-        if (mob instanceof Illusioner illusioner) {
+        if (mob instanceof Illusioner) {
             Material illusionerItem = cfg.getIllusionerHandItem();
             if (illusionerItem == Material.BOW) {
                 ItemStack bow = new ItemStack(Material.BOW);
@@ -168,6 +169,7 @@ public class EquipmentManager {
 
     /**
      * 블록 헬멧 - 헬멧 슬롯이 비어있을 때만 적용
+     * 스켈레톤 계열과 좀비 계열에만 적용
      */
     private void applyBlockHelmetIfEmpty(LivingEntity mob) {
         EntityEquipment eq = mob.getEquipment();
@@ -193,11 +195,30 @@ public class EquipmentManager {
                 || mob.getType() == EntityType.BOGGED
                 || (parchedType != null && mob.getType() == parchedType);
 
-        Map<Material, Double> pool = new HashMap<>(cfg.getGeneralBlockHelmetChances());
+        boolean isZombieFamily = mob.getType() == EntityType.ZOMBIE
+                || mob.getType() == EntityType.HUSK
+                || mob.getType() == EntityType.DROWNED
+                || mob.getType() == EntityType.ZOMBIE_VILLAGER
+                || mob.getType() == EntityType.ZOMBIFIED_PIGLIN;
+
+        // 스켈레톤이나 좀비 계열이 아니면 블록 헬멧 적용 안함
+        if (!isSkeletonFamily && !isZombieFamily) {
+            return;
+        }
+
+        Map<Material, Double> pool = new HashMap<>();
+
+        // 일반 블록 헬멧은 좀비 계열에만 적용
+        if (isZombieFamily) {
+            pool.putAll(cfg.getGeneralBlockHelmetChances());
+        }
+
+        // 스켈레톤 전용 블록 헬멧
         if (isSkeletonFamily) {
-            // 스켈레톤 계열은 전용 풀 추가
+            pool.putAll(cfg.getGeneralBlockHelmetChances());
             pool.putAll(cfg.getSkeletonBlockHelmetChances());
         }
+
         if (pool.isEmpty()) return;
 
         // 첫 성공 확률의 블록을 헬멧으로 장착
@@ -273,7 +294,7 @@ public class EquipmentManager {
 
         // 무기 인챈트
         ItemStack main = eq.getItemInMainHand();
-        if (main != null && main.getType() != Material.AIR) {
+        if (main.getType() != Material.AIR) {
             boolean isDrownedTrident = (mob.getType() == EntityType.DROWNED) && (main.getType() == Material.TRIDENT);
 
             // 1.21.11+ SPEAR/GOLDEN_SPEAR 확인
@@ -350,13 +371,13 @@ public class EquipmentManager {
 
     private boolean isArmor(ItemStack item, EquipmentSlot slot) {
         if (item == null || item.getType() == Material.AIR) return false;
-        switch (slot) {
-            case HEAD:  return item.getType().name().endsWith("_HELMET");
-            case CHEST: return item.getType().name().endsWith("_CHESTPLATE");
-            case LEGS:  return item.getType().name().endsWith("_LEGGINGS");
-            case FEET:  return item.getType().name().endsWith("_BOOTS");
-            default:    return false;
-        }
+        return switch (slot) {
+            case HEAD -> item.getType().name().endsWith("_HELMET");
+            case CHEST -> item.getType().name().endsWith("_CHESTPLATE");
+            case LEGS -> item.getType().name().endsWith("_LEGGINGS");
+            case FEET -> item.getType().name().endsWith("_BOOTS");
+            default -> false;
+        };
     }
 
     private void enchantArmorPiece(ItemStack item, EquipmentSlot slot) {
@@ -385,7 +406,7 @@ public class EquipmentManager {
 
     private void addRandomEnchant(ItemStack item, Map<Enchantment, Integer> enchants) {
         if (enchants.isEmpty()) return;
-        int num = 1 + random.nextInt(Math.max(1, enchants.size()));
+        int num = 1 + random.nextInt(enchants.size());
         List<Enchantment> list = new ArrayList<>(enchants.keySet());
         Collections.shuffle(list, random);
         for (int i = 0; i < num; i++) {

@@ -22,8 +22,6 @@ public class ConfigManager {
 
     // ==== 기본 스폰/설정 ====
     private double mobSpawnMultiplier = 1.0;
-    private boolean enableSpawnEgg = true;
-    private int lightThreshold = 7;
 
     // ==== 인첸트 확률 ====
     private double weaponEnchantChance = 1.0;
@@ -44,6 +42,9 @@ public class ConfigManager {
     private final Map<EntityType, Map<String, Double>> specialChances = new EnumMap<>(EntityType.class);
     private final Set<EntityType> disabledEntities = EnumSet.noneOf(EntityType.class);
     private final Map<EntityType, Double> naturalSpawnChance = new EnumMap<>(EntityType.class);
+
+    // ==== 엔티티별 드랍 아이템 설정 ====
+    private final Map<EntityType, Map<Material, Double>> dropChances = new EnumMap<>(EntityType.class);
 
     // ==== 대체 스폰 ====
     private final Map<EntityType, Map<EntityType, Double>> replacementChances = new EnumMap<>(EntityType.class);
@@ -66,11 +67,12 @@ public class ConfigManager {
     private Material illusionerHandItem = null;
     private double illusionerFlameChance = 0.0;
 
-    // ==== 1.21.11+ 좀비/허스크 Spear(창) & 낙타 기병대 ====
+    // ==== 1.21.11+ 좀비/허스크 Spear(창) & 조키 ====
     private double zombieSpearChance = 0.0;
     private double huskSpearChance = 0.0;
-    private double zombieCamelJockeyChance = 0.0;
+    private double zombieHorseJockeyChance = 0.0;
     private double huskCamelJockeyChance = 0.0;
+    private double drownedNautilusJockeyChance = 0.0;
 
     // ==== 1.21.11+ 피글린/좀비화 피글린 금창(Golden Spear) ====
     private double piglinGoldSpearChance = 0.0;
@@ -86,7 +88,7 @@ public class ConfigManager {
 
         // ---- enabled-worlds ----
         List<String> worlds = cfg.getStringList("enabled-worlds");
-        if (worlds == null || worlds.isEmpty()) {
+        if (worlds.isEmpty()) {
             enabledWorlds = new HashSet<>(Arrays.asList("world", "world_nether", "world_the_end"));
         } else {
             enabledWorlds = new HashSet<>(worlds);
@@ -95,10 +97,6 @@ public class ConfigManager {
         // ---- mob-spawn ----
         ConfigurationSection mobSpawn = cfg.getConfigurationSection("mob-spawn");
         mobSpawnMultiplier = (mobSpawn != null) ? mobSpawn.getDouble("multiplier", 1.0) : 1.0;
-        enableSpawnEgg     = mobSpawn != null && mobSpawn.getBoolean("enable-spawn-egg", true);
-
-        // ---- light-threshold ----
-        lightThreshold = cfg.getInt("light-threshold", 7);
 
         // ---- enchant-chance ----
         ConfigurationSection enchantSec = cfg.getConfigurationSection("enchant-chance");
@@ -170,15 +168,17 @@ public class ConfigManager {
             }
         }
 
-        // 1.21.11+ 낙타 기병대 확률
-        zombieCamelJockeyChance = jockeyChances.getOrDefault("zombie_camel_jockey", 0.0);
+        // 1.21.11+ 조키 확률
+        zombieHorseJockeyChance = jockeyChances.getOrDefault("zombie_horse_jockey", 0.0);
         huskCamelJockeyChance = jockeyChances.getOrDefault("husk_camel_jockey", 0.0);
+        drownedNautilusJockeyChance = jockeyChances.getOrDefault("drowned_nautilus_jockey", 0.0);
 
         // ---- spawn-chance & entity specials ----
         spawnChances.clear();
         specialChances.clear();
         disabledEntities.clear();
         naturalSpawnChance.clear();
+        dropChances.clear();
 
         ConfigurationSection spawnSec = cfg.getConfigurationSection("spawn-chance");
         if (spawnSec != null) {
@@ -219,6 +219,20 @@ public class ConfigManager {
                     }
                 }
                 spawnChances.put(type, slotMap);
+
+                // drops
+                ConfigurationSection dropSec = entSec.getConfigurationSection("drops");
+                if (dropSec != null) {
+                    Map<Material, Double> drops = new EnumMap<>(Material.class);
+                    for (String matName : dropSec.getKeys(false)) {
+                        try {
+                            drops.put(Material.valueOf(matName.toUpperCase(Locale.ROOT)), dropSec.getDouble(matName, 0.0));
+                        } catch (IllegalArgumentException e) {
+                            plugin.getLogger().warning("Invalid material in " + etName + ".drops: " + matName);
+                        }
+                    }
+                    dropChances.put(type, drops);
+                }
 
                 // entity special chances
                 Map<String, Double> spec = new HashMap<>();
@@ -301,8 +315,6 @@ public class ConfigManager {
 
     // 기본 스폰/설정
     public double getMobSpawnMultiplier() { return mobSpawnMultiplier; }
-    public boolean isEnableSpawnEgg()     { return enableSpawnEgg; }
-    public int getLightThreshold()        { return lightThreshold; }
 
     // 인첸트 확률
     public double getWeaponEnchantChance() { return weaponEnchantChance; }
@@ -322,6 +334,9 @@ public class ConfigManager {
     public Set<EntityType> getDisabledEntities()                                  { return disabledEntities; }
     public Map<EntityType, Double> getNaturalSpawnChance()                        { return naturalSpawnChance; }
 
+    // 드랍 아이템
+    public Map<EntityType, Map<Material, Double>> getDropChances() { return dropChances; }
+
     // 대체 스폰
     public Map<EntityType, Map<EntityType, Double>> getReplacementChances() { return replacementChances; }
     public boolean isReplacementApplyNatural()   { return replacementApplyNatural; }
@@ -334,12 +349,8 @@ public class ConfigManager {
     public boolean isBlockHelmetEnabled()                         { return blockHelmetEnabled; }
 
     // 월드 화이트리스트
-    public Set<String> getEnabledWorlds() {
-        return Collections.unmodifiableSet(enabledWorlds);
-    }
     public boolean isWorldEnabled(World world) {
-        if (world == null) return false;
-        return enabledWorlds.contains(world.getName());
+        return world != null && enabledWorlds.contains(world.getName());
     }
 
     // EquipmentManager 전역 특수 확률
@@ -356,9 +367,10 @@ public class ConfigManager {
     public double getZombieSpearChance() { return zombieSpearChance; }
     public double getHuskSpearChance() { return huskSpearChance; }
 
-    // 1.21.11+ 낙타 기병대
-    public double getZombieCamelJockeyChance() { return zombieCamelJockeyChance; }
+    // 1.21.11+ 조키
+    public double getZombieHorseJockeyChance() { return zombieHorseJockeyChance; }
     public double getHuskCamelJockeyChance() { return huskCamelJockeyChance; }
+    public double getDrownedNautilusJockeyChance() { return drownedNautilusJockeyChance; }
 
     // 1.21.11+ 피글린/좀비화 피글린 금창(Golden Spear)
     public double getPiglinGoldSpearChance() { return piglinGoldSpearChance; }
