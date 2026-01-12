@@ -53,6 +53,58 @@ public class EquipmentManager {
             eq.setItemInMainHand(new ItemStack(Material.BONE));
         }
 
+        // 1.21.11+ 좀비 Spear(창) 확률
+        if (mob instanceof Zombie && mob.getType() == EntityType.ZOMBIE) {
+            double spearChance = cfg.getZombieSpearChance();
+            if (spearChance > 0 && random.nextDouble() < spearChance) {
+                try {
+                    Material spear = Material.valueOf("SPEAR");
+                    eq.setItemInMainHand(new ItemStack(spear));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().fine("SPEAR material not available (requires 1.21.11+)");
+                }
+            }
+        }
+
+        // 1.21.11+ 허스크 Spear(창) 확률
+        if (mob instanceof Husk) {
+            double spearChance = cfg.getHuskSpearChance();
+            if (spearChance > 0 && random.nextDouble() < spearChance) {
+                try {
+                    Material spear = Material.valueOf("SPEAR");
+                    eq.setItemInMainHand(new ItemStack(spear));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().fine("SPEAR material not available (requires 1.21.11+)");
+                }
+            }
+        }
+
+        // 1.21.11+ 피글린 금창(Golden Spear) 확률
+        if (mob instanceof Piglin) {
+            double goldSpearChance = cfg.getPiglinGoldSpearChance();
+            if (goldSpearChance > 0 && random.nextDouble() < goldSpearChance) {
+                try {
+                    Material goldSpear = Material.valueOf("GOLDEN_SPEAR");
+                    eq.setItemInMainHand(new ItemStack(goldSpear));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().fine("GOLDEN_SPEAR material not available (requires 1.21.11+)");
+                }
+            }
+        }
+
+        // 1.21.11+ 좀비화 피글린 금창(Golden Spear) 확률
+        if (mob.getType() == EntityType.ZOMBIFIED_PIGLIN) {
+            double goldSpearChance = cfg.getZombifiedPiglinGoldSpearChance();
+            if (goldSpearChance > 0 && random.nextDouble() < goldSpearChance) {
+                try {
+                    Material goldSpear = Material.valueOf("GOLDEN_SPEAR");
+                    eq.setItemInMainHand(new ItemStack(goldSpear));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().fine("GOLDEN_SPEAR material not available (requires 1.21.11+)");
+                }
+            }
+        }
+
         // 우민(Vindicator) 손 아이템 교체 - 도끼 종류만 허용
         if (mob instanceof Vindicator vindicator) {
             Material vindicatorItem = cfg.getVindicatorHandItem();
@@ -223,7 +275,18 @@ public class EquipmentManager {
         ItemStack main = eq.getItemInMainHand();
         if (main != null && main.getType() != Material.AIR) {
             boolean isDrownedTrident = (mob.getType() == EntityType.DROWNED) && (main.getType() == Material.TRIDENT);
-            if (isDrownedTrident || Math.random() < cfg.getWeaponEnchantChance()) {
+
+            // 1.21.11+ SPEAR/GOLDEN_SPEAR 확인
+            boolean isSpear = false;
+            try {
+                Material spearType = Material.valueOf("SPEAR");
+                Material goldSpearType = Material.valueOf("GOLDEN_SPEAR");
+                isSpear = (main.getType() == spearType) || (main.getType() == goldSpearType);
+            } catch (IllegalArgumentException e) {
+                // SPEAR가 없으면 false 유지
+            }
+
+            if (isDrownedTrident || isSpear || Math.random() < cfg.getWeaponEnchantChance()) {
                 if (isSkeleton) {
                     switch (main.getType()) {
                         case BOW -> addRandomEnchant(main, Map.of(
@@ -240,7 +303,16 @@ public class EquipmentManager {
                                         Enchantment.FIRE_ASPECT, 2,
                                         Enchantment.LOOTING, 3
                                 ));
-                        default -> {}
+                        default -> {
+                            // SPEAR의 경우 별도 인챈트 (1.21.11+)
+                            if (isSpear) {
+                                addRandomEnchant(main, Map.of(
+                                        Enchantment.SHARPNESS, 5,
+                                        Enchantment.IMPALING, 5,
+                                        Enchantment.LOOTING, 3
+                                ));
+                            }
+                        }
                     }
                 } else if (isZombie || isPiglin) {
                     switch (main.getType()) {
@@ -252,7 +324,16 @@ public class EquipmentManager {
                                         Enchantment.FIRE_ASPECT, 2,
                                         Enchantment.LOOTING, 3
                                 ));
-                        default -> {}
+                        default -> {
+                            // SPEAR의 경우 별도 인챈트 (1.21.11+)
+                            if (isSpear) {
+                                addRandomEnchant(main, Map.of(
+                                        Enchantment.SHARPNESS, 5,
+                                        Enchantment.IMPALING, 5,
+                                        Enchantment.LOOTING, 3
+                                ));
+                            }
+                        }
                     }
                 }
             }

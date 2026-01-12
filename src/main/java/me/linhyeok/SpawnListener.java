@@ -247,6 +247,42 @@ public class SpawnListener implements Listener {
             }
         }
 
+        // 1.21.11+ 좀비 + 낙타 조키 (베이비 아님)
+        if (entity instanceof Zombie zombie && !zombie.isBaby() && zombie.getType() == EntityType.ZOMBIE) {
+            double camelChance = cfg.getZombieCamelJockeyChance();
+            if (camelChance > 0 && random.nextDouble() < camelChance) {
+                try {
+                    Entity camel = entity.getWorld().spawnEntity(entity.getLocation(), EntityType.CAMEL);
+                    camel.addPassenger(zombie);
+                    FoliaCompat.runOneTickLater(plugin, zombie, () -> {
+                        if (!zombie.isValid()) return;
+                        equip.applyAll(zombie);
+                    });
+                    return true;
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Failed to spawn zombie camel jockey (CAMEL may not be available): " + e.getMessage());
+                }
+            }
+        }
+
+        // 1.21.11+ 허스크 + 낙타 조키 (베이비 아님)
+        if (entity instanceof Husk husk && !husk.isBaby()) {
+            double camelChance = cfg.getHuskCamelJockeyChance();
+            if (camelChance > 0 && random.nextDouble() < camelChance) {
+                try {
+                    Entity camel = entity.getWorld().spawnEntity(entity.getLocation(), EntityType.CAMEL);
+                    camel.addPassenger(husk);
+                    FoliaCompat.runOneTickLater(plugin, husk, () -> {
+                        if (!husk.isValid()) return;
+                        equip.applyAll(husk);
+                    });
+                    return true;
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Failed to spawn husk camel jockey (CAMEL may not be available): " + e.getMessage());
+                }
+            }
+        }
+
         // 스켈레톤 계열 + 거미 조키 (PARCHED 포함)
         if (entity instanceof AbstractSkeleton skeleton) {
             String configKey = getSkeletonJockeyKey(skeleton);

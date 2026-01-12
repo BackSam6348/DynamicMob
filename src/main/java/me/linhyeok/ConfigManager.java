@@ -66,6 +66,16 @@ public class ConfigManager {
     private Material illusionerHandItem = null;
     private double illusionerFlameChance = 0.0;
 
+    // ==== 1.21.11+ 좀비/허스크 Spear(창) & 낙타 기병대 ====
+    private double zombieSpearChance = 0.0;
+    private double huskSpearChance = 0.0;
+    private double zombieCamelJockeyChance = 0.0;
+    private double huskCamelJockeyChance = 0.0;
+
+    // ==== 1.21.11+ 피글린/좀비화 피글린 금창(Golden Spear) ====
+    private double piglinGoldSpearChance = 0.0;
+    private double zombifiedPiglinGoldSpearChance = 0.0;
+
     public ConfigManager(Plugin plugin) {
         this.plugin = plugin;
     }
@@ -114,6 +124,14 @@ public class ConfigManager {
             drownedChannelingChance = specialRoot.getDouble("drowned_channeling_chance", 0.0);
             chargedCreeperChance    = specialRoot.getDouble("charged_creeper_chance", 0.0);
 
+            // 1.21.11+ 좀비/허스크 Spear(창)
+            zombieSpearChance = specialRoot.getDouble("zombie_spear_chance", 0.0);
+            huskSpearChance = specialRoot.getDouble("husk_spear_chance", 0.0);
+
+            // 1.21.11+ 피글린/좀비화 피글린 금창(Golden Spear)
+            piglinGoldSpearChance = specialRoot.getDouble("piglin_gold_spear_chance", 0.0);
+            zombifiedPiglinGoldSpearChance = specialRoot.getDouble("zombified_piglin_gold_spear_chance", 0.0);
+
             // Vindicator/Illusioner 손 아이템
             String vindicatorItemStr = specialRoot.getString("vindicator_hand_item", null);
             if (vindicatorItemStr != null && !vindicatorItemStr.equalsIgnoreCase("NONE")) {
@@ -151,6 +169,10 @@ public class ConfigManager {
                 jockeyChances.put(key.toLowerCase(Locale.ROOT), jcs.getDouble(key, 0.0));
             }
         }
+
+        // 1.21.11+ 낙타 기병대 확률
+        zombieCamelJockeyChance = jockeyChances.getOrDefault("zombie_camel_jockey", 0.0);
+        huskCamelJockeyChance = jockeyChances.getOrDefault("husk_camel_jockey", 0.0);
 
         // ---- spawn-chance & entity specials ----
         spawnChances.clear();
@@ -329,4 +351,16 @@ public class ConfigManager {
     public Material getVindicatorHandItem() { return vindicatorHandItem; }
     public Material getIllusionerHandItem() { return illusionerHandItem; }
     public double getIllusionerFlameChance() { return illusionerFlameChance; }
+
+    // 1.21.11+ 좀비/허스크 Spear(창)
+    public double getZombieSpearChance() { return zombieSpearChance; }
+    public double getHuskSpearChance() { return huskSpearChance; }
+
+    // 1.21.11+ 낙타 기병대
+    public double getZombieCamelJockeyChance() { return zombieCamelJockeyChance; }
+    public double getHuskCamelJockeyChance() { return huskCamelJockeyChance; }
+
+    // 1.21.11+ 피글린/좀비화 피글린 금창(Golden Spear)
+    public double getPiglinGoldSpearChance() { return piglinGoldSpearChance; }
+    public double getZombifiedPiglinGoldSpearChance() { return zombifiedPiglinGoldSpearChance; }
 }
