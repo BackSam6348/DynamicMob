@@ -100,9 +100,11 @@ jockey-chance:
   bogged_spider_jockey: 0.003
   parched_spider_jockey: 0.003  # PARCHED skeleton variant (if supported by server version)
 
-  # 1.21.11+ Adult zombies/husks riding camels
-  zombie_camel_jockey: 0.005    # Adult zombie riding camel (1.21.11+)
-  husk_camel_jockey: 0.006      # Adult husk riding camel (1.21.11+)
+  # 1.21.11+ Zombie/Husk/Drowned Jockey
+  zombie_horse_jockey: 0.005      # Zombie + Zombie Horse
+  husk_camel_jockey: 0.006        # Husk + Camel
+  drowned_nautilus_jockey: 0.004  # Drowned + Zombie Nautilus
+
 
 # --- Equipment/spawn settings for each mob type ---
 # Each mob type can be individually configured.
