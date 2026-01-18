@@ -46,6 +46,9 @@ public class ConfigManager {
     // ==== 엔티티별 드랍 아이템 설정 ====
     private final Map<EntityType, Map<Material, Double>> dropChances = new EnumMap<>(EntityType.class);
 
+    // ==== 엔티티별 스케일 설정 ====
+    private final Map<EntityType, Map<Double, Double>> scaleChances = new EnumMap<>(EntityType.class);
+
     // ==== 대체 스폰 ====
     private final Map<EntityType, Map<EntityType, Double>> replacementChances = new EnumMap<>(EntityType.class);
     private boolean replacementApplyNatural  = true;
@@ -179,6 +182,7 @@ public class ConfigManager {
         disabledEntities.clear();
         naturalSpawnChance.clear();
         dropChances.clear();
+        scaleChances.clear();
 
         ConfigurationSection spawnSec = cfg.getConfigurationSection("spawn-chance");
         if (spawnSec != null) {
@@ -232,6 +236,68 @@ public class ConfigManager {
                         }
                     }
                     dropChances.put(type, drops);
+                }
+
+                // scale - 대체 형식: scale_values 리스트 사용
+                if (entSec.isList("scale_values")) {
+                    Map<Double, Double> scales = new HashMap<>();
+                    List<?> scaleList = entSec.getList("scale_values");
+
+                    if (scaleList != null) {
+                        for (Object item : scaleList) {
+                            if (item instanceof java.util.Map) {
+                                @SuppressWarnings("unchecked")
+                                java.util.Map<String, Object> scaleEntry = (java.util.Map<String, Object>) item;
+
+                                try {
+                                    double size = ((Number) scaleEntry.get("size")).doubleValue();
+                                    double chance = ((Number) scaleEntry.get("chance")).doubleValue();
+                                    scales.put(size, chance);
+                                    if (DynamicMob.isDebugMode()) {
+                                        plugin.getLogger().info("Loaded scale for " + etName + ": " + size + " = " + chance);
+                                    }
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Invalid scale_values entry for " + etName);
+                                }
+                            }
+                        }
+                    }
+
+                    if (!scales.isEmpty()) {
+                        scaleChances.put(type, scales);
+                    }
+                }
+
+                // scale (키는 반드시 따옴표로 감싸야 함: "0.5": 0.1)
+                ConfigurationSection scaleSec = entSec.getConfigurationSection("scale");
+                if (scaleSec != null) {
+                    Map<Double, Double> scales = new HashMap<>();
+
+                    for (String key : scaleSec.getKeys(false)) {
+                        Object rawValue = scaleSec.get(key);
+
+                        try {
+                            double scaleValue = Double.parseDouble(key);
+                            double chance = 0.0;
+
+                            if (rawValue instanceof Number) {
+                                chance = ((Number) rawValue).doubleValue();
+                            } else if (rawValue instanceof String) {
+                                chance = Double.parseDouble((String) rawValue);
+                            }
+
+                            scales.put(scaleValue, chance);
+                            if (DynamicMob.isDebugMode()) {
+                                plugin.getLogger().info("Loaded scale for " + etName + ": " + scaleValue + " = " + chance);
+                            }
+                        } catch (Exception e) {
+                            plugin.getLogger().warning("Invalid scale in " + etName + ": " + key + " (use scale_values instead)");
+                        }
+                    }
+
+                    if (!scales.isEmpty()) {
+                        scaleChances.put(type, scales);
+                    }
                 }
 
                 // entity special chances
@@ -337,6 +403,9 @@ public class ConfigManager {
     // 드랍 아이템
     public Map<EntityType, Map<Material, Double>> getDropChances() { return dropChances; }
 
+    // 스케일
+    public Map<EntityType, Map<Double, Double>> getScaleChances() { return scaleChances; }
+
     // 대체 스폰
     public Map<EntityType, Map<EntityType, Double>> getReplacementChances() { return replacementChances; }
     public boolean isReplacementApplyNatural()   { return replacementApplyNatural; }
@@ -349,6 +418,7 @@ public class ConfigManager {
     public boolean isBlockHelmetEnabled()                         { return blockHelmetEnabled; }
 
     // 월드 화이트리스트
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isWorldEnabled(World world) {
         return world != null && enabledWorlds.contains(world.getName());
     }

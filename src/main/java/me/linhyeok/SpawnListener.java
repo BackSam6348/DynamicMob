@@ -98,8 +98,11 @@ public class SpawnListener implements Listener {
             return; // 약탈자는 아무것도 하지 않음
         }
 
-        // --- 장비/인챈트/충전 등 적용 (스포너/스폰알 포함) – 1틱 지연
+        // --- 스케일 즉시 적용 ---
         LivingEntity le = (LivingEntity) entity;
+        applyScale(le);
+
+        // --- 장비/인챈트/충전 등 적용 (스포너/스폰알 포함) – 1틱 지연
         FoliaCompat.runOneTickLater(plugin, le, () -> {
             if (!le.isValid()) return;
             equip.applyAll(le);
@@ -134,6 +137,32 @@ public class SpawnListener implements Listener {
         for (Map.Entry<Material, Double> entry : drops.entrySet()) {
             if (random.nextDouble() < entry.getValue()) {
                 entity.getWorld().dropItemNaturally(loc, new ItemStack(entry.getKey(), 1));
+            }
+        }
+    }
+
+    /**
+     * 몹에 스케일 적용
+     */
+    private void applyScale(LivingEntity entity) {
+        Map<Double, Double> scales = cfg.getScaleChances().get(entity.getType());
+        if (scales == null || scales.isEmpty()) return;
+
+        double roll = random.nextDouble();
+        double cumulative = 0.0;
+
+        for (Map.Entry<Double, Double> entry : scales.entrySet()) {
+            cumulative += entry.getValue();
+            if (roll < cumulative) {
+                try {
+                    var attr = entity.getAttribute(org.bukkit.attribute.Attribute.SCALE);
+                    if (attr != null) {
+                        attr.setBaseValue(entry.getKey());
+                    }
+                    break;
+                } catch (Exception ignored) {
+                    break;
+                }
             }
         }
     }
@@ -184,6 +213,7 @@ public class SpawnListener implements Listener {
                 }
 
                 if (spawned instanceof LivingEntity le) {
+                    applyScale(le);
                     FoliaCompat.runOneTickLater(plugin, le, () -> {
                         if (!le.isValid()) return;
                         equip.applyAll(le);
@@ -224,6 +254,7 @@ public class SpawnListener implements Listener {
             }
 
             if (clone instanceof LivingEntity le) {
+                applyScale(le);
                 FoliaCompat.runOneTickLater(plugin, le, () -> {
                     if (!le.isValid()) return;
                     equip.applyAll(le);
@@ -239,6 +270,7 @@ public class SpawnListener implements Listener {
             }
 
             if (clone instanceof LivingEntity le) {
+                applyScale(le);
                 FoliaCompat.runOneTickLater(plugin, le, () -> {
                     if (!le.isValid()) return;
                     equip.applyAll(le);
@@ -259,6 +291,7 @@ public class SpawnListener implements Listener {
             if (random.nextDouble() < chance) {
                 Entity chicken = entity.getWorld().spawnEntity(entity.getLocation(), EntityType.CHICKEN);
                 chicken.addPassenger(zombie);
+                applyScale(zombie);
                 FoliaCompat.runOneTickLater(plugin, zombie, () -> {
                     if (!zombie.isValid()) return;
                     equip.applyAll(zombie);
@@ -274,6 +307,7 @@ public class SpawnListener implements Listener {
                 try {
                     Entity zombieHorse = entity.getWorld().spawnEntity(entity.getLocation(), EntityType.ZOMBIE_HORSE);
                     zombieHorse.addPassenger(zombie);
+                    applyScale(zombie);
                     FoliaCompat.runOneTickLater(plugin, zombie, () -> {
                         if (!zombie.isValid()) return;
                         equip.applyAll(zombie);
@@ -292,6 +326,7 @@ public class SpawnListener implements Listener {
                 try {
                     Entity camel = entity.getWorld().spawnEntity(entity.getLocation(), EntityType.CAMEL);
                     camel.addPassenger(husk);
+                    applyScale(husk);
                     FoliaCompat.runOneTickLater(plugin, husk, () -> {
                         if (!husk.isValid()) return;
                         equip.applyAll(husk);
@@ -311,6 +346,7 @@ public class SpawnListener implements Listener {
                     EntityType nautilusType = EntityType.valueOf("ZOMBIE_NAUTILUS");
                     Entity nautilusZombie = entity.getWorld().spawnEntity(entity.getLocation(), nautilusType);
                     nautilusZombie.addPassenger(drowned);
+                    applyScale(drowned);
                     FoliaCompat.runOneTickLater(plugin, drowned, () -> {
                         if (!drowned.isValid()) return;
                         equip.applyAll(drowned);
@@ -331,6 +367,7 @@ public class SpawnListener implements Listener {
             if (random.nextDouble() < chance) {
                 Entity spider = entity.getWorld().spawnEntity(entity.getLocation(), EntityType.SPIDER);
                 spider.addPassenger(skeleton);
+                applyScale(skeleton);
                 FoliaCompat.runOneTickLater(plugin, skeleton, () -> {
                     if (!skeleton.isValid()) return;
                     equip.applyAll(skeleton);

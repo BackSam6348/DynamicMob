@@ -16,6 +16,11 @@ import java.util.List;
 public class DynamicMob extends JavaPlugin implements CommandExecutor, TabCompleter {
 
     private ConfigManager configManager;
+    private static boolean debugMode = false;
+
+    public static boolean isDebugMode() {
+        return debugMode;
+    }
 
     @Override
     public void onEnable() {
@@ -82,20 +87,54 @@ public class DynamicMob extends JavaPlugin implements CommandExecutor, TabComple
         if (!command.getName().equalsIgnoreCase("dm")) return false;
 
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission("dynamicmob.reload")) {
+                sender.sendMessage(Component.text("You don't have permission!", NamedTextColor.RED));
+                return true;
+            }
             reloadConfig();
             this.configManager.reload();
             sender.sendMessage(Component.text("[DynamicMob] Configuration reloaded!", NamedTextColor.GREEN));
             return true;
         }
 
-        sender.sendMessage(Component.text("Usage: /dm reload", NamedTextColor.YELLOW));
+        if (args.length == 2 && args[0].equalsIgnoreCase("debug")) {
+            if (!sender.isOp()) {
+                sender.sendMessage(Component.text("You must be OP to use this command!", NamedTextColor.RED));
+                return true;
+            }
+
+            if (args[1].equalsIgnoreCase("on")) {
+                debugMode = true;
+                sender.sendMessage(Component.text("[DynamicMob] Debug mode enabled!", NamedTextColor.GREEN));
+                return true;
+            } else if (args[1].equalsIgnoreCase("off")) {
+                debugMode = false;
+                sender.sendMessage(Component.text("[DynamicMob] Debug mode disabled!", NamedTextColor.YELLOW));
+                return true;
+            }
+        }
+
+        sender.sendMessage(Component.text("Usage: /dm reload | /dm debug <on|off>", NamedTextColor.YELLOW));
         return true;
     }
 
     @Override
     public @NotNull List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String @NotNull [] args) {
         if (!command.getName().equalsIgnoreCase("dm")) return Collections.emptyList();
-        if (args.length == 1) return Collections.singletonList("reload");
+
+        if (args.length == 1) {
+            List<String> completions = new java.util.ArrayList<>();
+            completions.add("reload");
+            if (sender.isOp()) {
+                completions.add("debug");
+            }
+            return completions;
+        }
+
+        if (args.length == 2 && args[0].equalsIgnoreCase("debug") && sender.isOp()) {
+            return java.util.Arrays.asList("on", "off");
+        }
+
         return Collections.emptyList();
     }
 }
